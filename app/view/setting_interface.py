@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from datetime import datetime
+
 from PySide6.QtCore import Qt, QThread, QUrl
 from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import QFileDialog, QWidget
@@ -33,6 +35,7 @@ from ..common.event_bus import event_bus
 from ..common.setting import COPYLEFT, TEAM, VERSION, YEAR
 from ..common.text import Text
 from ..components.config_card import DetectionCard
+from ..service.ffmpeg_scanner import FFmpegScanResult, FFmpegScanThread
 
 
 class ExeDetectThread(QThread):
@@ -142,7 +145,7 @@ class SettingInterface(ScrollArea):
             self.exeGroup,
         )
         self.detectionCard = DetectionCard(
-            FIF.SEARCH, self.globalText.DetectPrograms, self.globalText.ADAUPP
+            FIF.SEARCH, self.globalText.DetectPrograms, self.globalText.FFmpegScanTooltip
         )
 
         # 关于
@@ -209,7 +212,13 @@ class SettingInterface(ScrollArea):
         )
 
     def _onFFmpegPathCardClicked(self):
-        path, _ = QFileDialog.getOpenFileName(self, self.globalText.SelectFfmpegFile)
+        if sys.platform == "win32":
+            filter_str = "ffmpeg.exe (*.exe)"
+        else:
+            filter_str = "ffmpeg (*)"
+        path, _ = QFileDialog.getOpenFileName(
+            self, self.globalText.SelectFfmpegFile, filter=filter_str
+        )
 
         if not path or cfg.get(cfg.ffmpegPath) == path:
             return
@@ -295,20 +304,92 @@ class SettingInterface(ScrollArea):
 
     def _onDectectionCardClicked(self):
         self.detectionCard.openButton.setEnabled(False)
-        if sys.platform == "darwin":
-            self.detectionCard.openButton.setText(self.globalText.Detecting)
+        self.detectionCard.openButton.setText(self.globalText.Detecting)
 
-        # ffmpeg
-        self._detectExe(
-            "ffmpeg",
-            "https://ffmpeg.org/download.html",
-            cfg.ffmpegPath,
-            self.ffmpegPathCard,
+        # 断开旧线程连接（如有）
+        if hasattr(self, "_ffmpeg_scan_thread") and self._ffmpeg_scan_thread:
+            try:
+                self._ffmpeg_scan_thread.progress.disconnect()
+                self._ffmpeg_scan_thread.finished.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            try:
+                self._ffmpeg_scan_thread.quit()
+                self._ffmpeg_scan_thread.wait(1000)
+            except RuntimeError:
+                pass
+            self._ffmpeg_scan_thread = None
+
+        # 启动全面扫描线程
+        self._ffmpeg_scan_thread = FFmpegScanThread(parent=self)
+        self._ffmpeg_scan_thread.progress.connect(self._onFFmpegScanProgress)
+        self._ffmpeg_scan_thread.finished.connect(self._onFFmpegScanFinished)
+        self._ffmpeg_scan_thread.finished.connect(self._ffmpeg_scan_thread.deleteLater)
+        self._ffmpeg_scan_thread.start()
+
+    def _onFFmpegScanProgress(self, message: str):
+        """扫描进度更新"""
+        self.detectionCard.openButton.setText(message)
+
+    def _onFFmpegScanFinished(self, result: FFmpegScanResult):
+        """扫描完成回调"""
+        self.detectionCard.openButton.setEnabled(True)
+        self.detectionCard.openButton.setText(self.globalText.Detect)
+
+        if not result.available:
+            # 未找到 FFmpeg
+            dialog = Dialog(
+                self.globalText.DetectionFailed,
+                self.globalText.NotFoundDownloadIt.format("ffmpeg"),
+                self,
+            )
+            dialog.yesButton.setText(self.globalText.GoToDownload)
+            dialog.cancelButton.setText(self.globalText.Cancel)
+            if dialog.exec():
+                QDesktopServices.openUrl(QUrl("https://ffmpeg.org/download.html"))
+            return
+
+        # 保存扫描结果到配置
+        cfg.set(cfg.ffmpegPath, result.ffmpeg_path)
+        cfg.set(cfg.ffmpegVersion, result.version)
+        cfg.set(cfg.ffmpegHasNvenc, result.has_nvenc)
+        cfg.set(cfg.ffmpegHasQsv, result.has_qsv)
+        cfg.set(cfg.ffmpegHasVideotoolbox, result.has_videotoolbox)
+        cfg.set(cfg.ffmpegHasAmf, result.has_amf)
+        cfg.set(cfg.ffmpegHwaccels, ", ".join(result.hwaccels))
+        cfg.set(cfg.ffmpegEncoders, ", ".join(sorted(result.encoders)))
+        cfg.set(
+            cfg.ffmpegLastScanTime,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
 
-        # Windows/Linux 同步检测，直接恢复按钮；macOS 由 _onExeDetected 回调恢复
-        if sys.platform != "darwin":
-            self.detectionCard.openButton.setEnabled(True)
+        # 更新 UI
+        self.ffmpegPathCard.setContent(result.ffmpeg_path)
+
+        # 构建成功通知消息
+        hwaccel_parts = []
+        if result.has_nvenc:
+            hwaccel_parts.append("NVIDIA NVENC")
+        if result.has_qsv:
+            hwaccel_parts.append("Intel QSV")
+        if result.has_videotoolbox:
+            hwaccel_parts.append("VideoToolbox")
+        if result.has_amf:
+            hwaccel_parts.append("AMD AMF")
+
+        version_msg = self.globalText.FFmpegVersionDetected.format(result.version)
+        if hwaccel_parts:
+            hwaccel_msg = self.globalText.FFmpegHwaccelDetected.format(
+                ", ".join(hwaccel_parts)
+            )
+            msg = f"{version_msg}\n{hwaccel_msg}"
+        else:
+            msg = f"{version_msg}\n{self.globalText.FFmpegNoHwaccel}"
+
+        event_bus.notification_service.show_success(
+            self.globalText.FFmpegScanDone,
+            msg,
+        )
 
     def _onAccentColorChanged(self):
         color = cfg.get(cfg.accentColor)
