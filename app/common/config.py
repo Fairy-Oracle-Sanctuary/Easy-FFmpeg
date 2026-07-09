@@ -108,6 +108,16 @@ class Config(QConfig):
 
     # exe
     ffmpegPath = ConfigItem("FFmpeg", "FFmpegPath", get_default_exe_path("ffmpeg"))
+    ffmpegVersion = ConfigItem("FFmpeg", "FFmpegVersion", "")
+    ffmpegHasNvenc = ConfigItem("FFmpeg", "FFmpegHasNvenc", False, BoolValidator())
+    ffmpegHasQsv = ConfigItem("FFmpeg", "FFmpegHasQsv", False, BoolValidator())
+    ffmpegHasVideotoolbox = ConfigItem(
+        "FFmpeg", "FFmpegHasVideotoolbox", False, BoolValidator()
+    )
+    ffmpegHasAmf = ConfigItem("FFmpeg", "FFmpegHasAmf", False, BoolValidator())
+    ffmpegHwaccels = ConfigItem("FFmpeg", "FFmpegHwaccels", "")
+    ffmpegEncoders = ConfigItem("FFmpeg", "FFmpegEncoders", "")
+    ffmpegLastScanTime = ConfigItem("FFmpeg", "FFmpegLastScanTime", "")
 
 
 cfg = Config()
