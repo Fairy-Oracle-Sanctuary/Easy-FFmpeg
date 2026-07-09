@@ -4,7 +4,16 @@ from PySide6.QtCore import QObject
 class Text(QObject):
     def __init__(self):
         super().__init__()
-        self.AddNewProject = self.tr("添加新项目")
+        # common
+        self.Success = self.tr("成功")
+        self.Error = self.tr("错误")
+        self.Warning = self.tr("警告")
+        self.OK = self.tr("确定")
+        self.Cancel = self.tr("取消")
+        self.Default = self.tr("默认")
+        self.Close = self.tr("关闭")
+
+        # setting
         self.Settings = self.tr("设置")
         self.Personalization = self.tr("个性化")
         self.ApplicationTheme = self.tr("应用主题")
@@ -32,3 +41,13 @@ class Text(QObject):
         self.Detect = self.tr("检测")
         self.UpdateSuccessful = self.tr("更新成功")
         self.STEAR = self.tr("配置在重启软件后生效")
+        self.DetectionSuccessful = self.tr("检测成功")
+        self.PathSetTo = self.tr("{}路径已设置为{}")
+        self.NotFoundDownloadIt = self.tr("未检测到{}程序，是否要下载")
+        self.GoToDownload = self.tr("前往下载")
+        self.Detecting = self.tr("检测中...")
+        self.NewVersionDetected = self.tr("检测到新版本")
+        self.NewVersion = self.tr("新版本")
+        self.ADYWTDI = self.tr("可用，你是否要下载新版本？")
+        self.NoNewVersion = self.tr("没有新版本")
+        self.FKWIUTD = self.tr("Easy FFmpeg 已是最新版本")
