@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/app">
+        <file>images/logo.png</file>
+        <file>images/logo.ico</file>
+
+        <file>images/logo/FFmpeg.svg</file>
+
+        <file>i18n/app.en_US.qm</file>
+    </qresource>
+</RCC>
