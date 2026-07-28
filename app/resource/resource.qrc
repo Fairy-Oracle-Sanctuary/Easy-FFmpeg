@@ -4,7 +4,16 @@
         <file>images/logo.ico</file>
 
         <file>images/logo/FFmpeg.svg</file>
+        <file>images/logo/Face01.svg</file>
+        <file>images/logo/Face02.svg</file>
+        <file>images/logo/Face03.svg</file>
+        <file>images/logo/Face04.svg</file>
+        <file>images/logo/Face05.svg</file>
+        <file>images/logo/Face06.svg</file>
+        <file>images/logo/Face07.svg</file>
+        <file>images/logo/Face08.svg</file>
+        <file>images/logo/Face09.svg</file>
+        <file>images/logo/Face10.svg</file>
 
-        <file>i18n/app.en_US.qm</file>
     </qresource>
 </RCC>

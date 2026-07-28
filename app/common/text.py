@@ -12,6 +12,23 @@ class Text(QObject):
         self.Cancel = self.tr("取消")
         self.Default = self.tr("默认")
         self.Close = self.tr("关闭")
+        self.All = self.tr("全部")
+
+        # task
+        self.Waiting = self.tr("等待")
+        self.Processing = self.tr("处理中")
+        self.Done = self.tr("完成")
+        self.Failed = self.tr("失败")
+        self.Cancelling = self.tr("取消中")
+        self.Cancelled = self.tr("已取消")
+        self.TaskType = self.tr("任务类型")
+        self.TaskCompleted = self.tr("{} {}已完成")
+        self.TaskFailed = self.tr("{} {}任务失败：{}")
+        self.TaskSuccessTitle = self.tr("{}任务完成")
+        self.TaskFailedTitle = self.tr("{}任务失败")
+
+        # home
+        self.MediaFiles = self.tr("媒体文件")
 
         # setting
         self.Settings = self.tr("设置")
@@ -51,3 +68,4 @@ class Text(QObject):
         self.ADYWTDI = self.tr("可用，你是否要下载新版本？")
         self.NoNewVersion = self.tr("没有新版本")
         self.FKWIUTD = self.tr("Easy FFmpeg 已是最新版本")
+        self.SelectFfmpegFile = self.tr("选择ffmpeg文件")

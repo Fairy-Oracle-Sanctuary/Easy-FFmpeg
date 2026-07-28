@@ -1,4 +1,3 @@
-# coding:utf-8
 # from ..common.signal_bus import signalBus
 # from ..common.icon import Logo
 import shutil
@@ -30,6 +29,7 @@ from libs.qfluentwidgets_pro.qframelesswindow.utils import getSystemAccentColor
 
 from ..common.config import cfg, get_default_exe_path
 from ..common.event_bus import event_bus
+from ..common.icon import Logo
 from ..common.setting import COPYLEFT, TEAM, VERSION, YEAR
 from ..common.text import Text
 from ..components.config_card import DetectionCard
@@ -51,6 +51,7 @@ class ExeDetectThread(QThread):
                 [self.exe_path, self.version_flag],
                 capture_output=True,
                 timeout=10,
+                check=False,
             )
             print(result.stdout.decode("utf-8"))
             print(result.stderr.decode("utf-8"))
@@ -136,7 +137,7 @@ class SettingInterface(ScrollArea):
         self.exeGroup = SettingCardGroup(self.globalText.Download, self.scrollWidget)
         self.ffmpegPathCard = PushSettingCard(
             self.globalText.SelectFile,
-            ":/app/images/logo/FFmpeg.svg",
+            Logo.FFMPEG,
             "FFmpeg",
             cfg.get(cfg.ffmpegPath),
             self.exeGroup,
