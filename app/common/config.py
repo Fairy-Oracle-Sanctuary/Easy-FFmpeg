@@ -109,6 +109,11 @@ class Config(QConfig):
     # exe
     ffmpegPath = ConfigItem("FFmpeg", "FFmpegPath", get_default_exe_path("ffmpeg"))
 
+    # home
+    homeRecursive = ConfigItem(
+        "Home", "Recursive", False, BoolValidator(), restart=False
+    )
+
 
 cfg = Config()
 cfg.themeMode.value = Theme.LIGHT

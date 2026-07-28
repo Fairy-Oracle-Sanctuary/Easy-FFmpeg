@@ -1,4 +1,3 @@
-# coding: utf-8
 import re
 
 import requests
@@ -36,7 +35,7 @@ class VersionService:
 
             self.lastestVersion = version[1:]
             return self.lastestVersion
-        except Exception as e:
+        except requests.exceptions.HTTPError as e:
             print(f"Error getting latest version: {e}")
 
     def hasNewVersion(self) -> bool:

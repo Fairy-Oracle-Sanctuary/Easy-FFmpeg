@@ -10,10 +10,14 @@ from app.common.text import Text
 from app.components.infobar import NotificationService
 from app.service.version_service import VersionService
 from app.view.home_interface import HomeInterface
-from app.view.setting_interface import SettingInterface  # noqa
+from app.view.setting_interface import SettingInterface
+from app.view.task_interface import TaskInterface
 from libs.qfluentwidgets_pro import FluentIcon as FIF
 from libs.qfluentwidgets_pro import (
     InfoBarPosition,
+    InfoBadge,
+    InfoBadgePosition,
+    InfoLevel,
     MessageBox,
     TopFluentWindow,
     TopNavigationItemPosition,
@@ -57,12 +61,20 @@ class MainWindow(TopFluentWindow):
 
     def _initNavigation(self):
         self.homeInterface = HomeInterface(self)
+        self.taskInterface = TaskInterface(self)
         self.settingInterface = SettingInterface(self)
 
         self.addSubInterface(
             self.homeInterface,
             FIF.HOME,
             "主页",
+            TopNavigationItemPosition.LEFT,
+            expanded=True,
+        )
+        self.taskItem = self.addSubInterface(
+            self.taskInterface,
+            FIF.MEDIA,
+            "任务",
             TopNavigationItemPosition.LEFT,
             expanded=True,
         )
@@ -73,9 +85,36 @@ class MainWindow(TopFluentWindow):
             TopNavigationItemPosition.RIGHT,
         )
 
+        self.taskBadge = InfoBadge.attension(
+            "0",
+            parent=self.navigationInterface,
+            target=self.taskItem,
+            position=InfoBadgePosition.TOP_NAVIGATION_ITEM,
+        )
+        self.taskBadge.setFixedSize(0, 0)
+        self.taskBadge.setText("")
+
     def _connectSignalToSlot(self):
         """连接信号到槽"""
         event_bus.checkUpdateSig.connect(self.checkUpdate)
+        event_bus.taskCountChanged.connect(self._updateTaskBadge)
+        event_bus.hasFailedTasks.connect(self._updateBadgeLevel)
+
+    def _updateBadgeLevel(self, hasFailed: bool):
+        """有失败任务时角标变橙色警告"""
+        self.taskBadge.setLevel(InfoLevel.ERROR if hasFailed else InfoLevel.ATTENTION)
+
+    def _updateTaskBadge(self, count: int):
+        """更新任务数量角标"""
+        if count > 0:
+            self.taskBadge.setText(str(count))
+            self.taskBadge.setFixedSize(self.taskBadge.sizeHint())
+        else:
+            self.taskBadge.setText("")
+            self.taskBadge.setFixedSize(0, 0)
+        # 尺寸变化后重新定位，修复首次显示时 y 轴偏移
+        if self.taskBadge.manager:
+            self.taskBadge.move(self.taskBadge.manager.position())
 
     def showMessageBox(
         self, title: str, content: str, showYesButton=False, yesSlot=None
