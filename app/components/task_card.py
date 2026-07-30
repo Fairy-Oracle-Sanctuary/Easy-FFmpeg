@@ -1,10 +1,9 @@
 from enum import Enum
 from pathlib import Path
 
-from PySide6.QtCore import QFileInfo, Qt, Signal
+from PySide6.QtCore import QFileInfo, Qt, Signal, QDateTime
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QFileIconProvider, QHBoxLayout, QVBoxLayout
-import time
 
 from libs.qfluentwidgets_pro import (
     BodyLabel,
@@ -25,7 +24,7 @@ from libs.qfluentwidgets_pro import (
 )
 
 from ..common.event_bus import event_bus
-from ..common.utils import showInFolder
+from ..common.utils import showInFolder, openUrl
 from ..service.ffmpeg_service import FFmpegTask
 
 
@@ -164,6 +163,10 @@ class FFmpegTaskCard(TaskCardBase):
         self.retryButton.setToolTip("重试任务")
         self.retryButton.setToolTipDuration(3000)
         self.retryButton.installEventFilter(ToolTipFilter(self.retryButton))
+        self.logButton = ToolButton(FluentIcon.COMMAND_PROMPT)
+        self.logButton.setToolTip("查看日志")
+        self.logButton.setToolTipDuration(3000)
+        self.logButton.installEventFilter(ToolTipFilter(self.logButton))
         self.deleteButton.setToolTip("移除任务")
         self.deleteButton.setToolTipDuration(3000)
         self.deleteButton.installEventFilter(ToolTipFilter(self.deleteButton))
@@ -186,6 +189,7 @@ class FFmpegTaskCard(TaskCardBase):
         self.hBoxLayout.addWidget(self.openFolderButton)
         self.hBoxLayout.addWidget(self.cancelButton)
         self.hBoxLayout.addWidget(self.retryButton)
+        self.hBoxLayout.addWidget(self.logButton)
         self.hBoxLayout.addWidget(self.deleteButton)
 
         self.vBoxLayout.setSpacing(5)
@@ -219,6 +223,7 @@ class FFmpegTaskCard(TaskCardBase):
         self.openFolderButton.clicked.connect(self._onOpenButtonClicked)
         self.cancelButton.clicked.connect(self._onCancelButtonClicked)
         self.retryButton.clicked.connect(self._onRetryButtonClicked)
+        self.logButton.clicked.connect(self._onLogButtonClicked)
         self.deleteButton.clicked.connect(self._onDeleteButtonClicked)
 
     def _updateStatus(self, status: TaskStatus = TaskStatus.Waiting):
@@ -228,12 +233,14 @@ class FFmpegTaskCard(TaskCardBase):
             self.openFolderButton.setVisible(False)
             self.cancelButton.setVisible(False)
             self.retryButton.setVisible(False)
+            self.logButton.setVisible(False)
             self.deleteButton.setVisible(True)
             self._updateInfoVisible(False)
         elif status == TaskStatus.Pending or status == TaskStatus.Processing:
             self.openFolderButton.setVisible(False)
             self.cancelButton.setVisible(True)
             self.retryButton.setVisible(False)
+            self.logButton.setVisible(False)
             self.deleteButton.setVisible(False)
             self._updateInfoVisible(True)
         elif status == TaskStatus.Cancelling:
@@ -241,6 +248,7 @@ class FFmpegTaskCard(TaskCardBase):
             self.cancelButton.setVisible(True)
             self.cancelButton.setEnabled(False)
             self.retryButton.setVisible(False)
+            self.logButton.setVisible(False)
             self.deleteButton.setVisible(False)
             self._updateInfoVisible(False)
         elif status == TaskStatus.Cancelled:
@@ -248,18 +256,21 @@ class FFmpegTaskCard(TaskCardBase):
             self.cancelButton.setVisible(False)
             self.cancelButton.setEnabled(True)
             self.retryButton.setVisible(True)
+            self.logButton.setVisible(False)
             self.deleteButton.setVisible(True)
             self._updateInfoVisible(False)
         elif status == TaskStatus.Failed:
             self.openFolderButton.setVisible(False)
             self.cancelButton.setVisible(False)
             self.retryButton.setVisible(True)
+            self.logButton.setVisible(True)
             self.deleteButton.setVisible(True)
             self._updateInfoVisible(False)
         elif status == TaskStatus.Succeeded:
             self.openFolderButton.setVisible(True)
             self.cancelButton.setVisible(False)
             self.retryButton.setVisible(False)
+            self.logButton.setVisible(False)
             self.deleteButton.setVisible(True)
             self._updateInfoVisible(False)
 
@@ -281,8 +292,7 @@ class FFmpegTaskCard(TaskCardBase):
         self.finishTimeIcon.setVisible(not visible)
         self.finishTimeLabel.setVisible(not visible)
         if not visible:
-            t = time.gmtime()
-            self.finishTimeLabel.setText(time.strftime("%Y-%m-%d %H:%M:%S", t))
+            self.finishTimeLabel.setText(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"))
 
 
     def updateTask(self, progress=0, status=TaskStatus.Waiting, size="0KiB", time=0.0, bitrate="0kbits/s", speed=0.0):
@@ -299,6 +309,9 @@ class FFmpegTaskCard(TaskCardBase):
     
     def _onCancelButtonClicked(self):
         event_bus.cancelTaskSig.emit(self.task.task_id)
+    
+    def _onLogButtonClicked(self):
+        openUrl(self.task.logPath)
     
     def _onRetryButtonClicked(self):
         event_bus.retryTaskSig.emit(self.task.task_id)
