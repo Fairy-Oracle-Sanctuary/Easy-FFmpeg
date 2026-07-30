@@ -1,11 +1,12 @@
 import re
 import time
 
-from PySide6.QtCore import QEventLoop, QProcess, QRunnable
+from PySide6.QtCore import QEventLoop, QProcess, QRunnable, QDateTime
 
 from ..common.config import cfg
 from ..common.event_bus import event_bus
 from ..common.task_status import TaskStatus
+from ..common.logger import Logger
 
 # 解析 ffmpeg 输出
 DURATION_RE = re.compile(r"Duration: (\d{2}):(\d{2}):(\d{2}\.\d+)")
@@ -26,6 +27,8 @@ class FFmpegTask:
         self.videoPath = videoPath
         self.saveFolder = saveFolder
         self.outputName = outputName
+        self.logPath = None
+        self.createTime = QDateTime.currentDateTime()
         
 class FFmpegWorker(QRunnable):
     def __init__(self, task: FFmpegTask):
@@ -34,8 +37,14 @@ class FFmpegWorker(QRunnable):
         self.args: list = self.task.args
         self.duration: float = 0.0
         self._last_emit = 0.0
+        self.taskLogger = None
 
     def run(self):
+        # create logger
+        currentTime = self.task.createTime.toString("yyyy-MM-dd_hh-mm-ss")
+        self.taskLogger = Logger("Tasks/" + currentTime, False)
+        self.task.logPath = str(self.taskLogger.logFile.absolute())
+
         self.process = QProcess()
         self.process.readyReadStandardError.connect(self._handle_stderr)
         self.process.finished.connect(self._handle_finished)
@@ -107,6 +116,7 @@ class FFmpegWorker(QRunnable):
         data = self.process.readAllStandardError().data().decode("utf-8", errors="ignore")
         self._try_parse_duration(data)
         self._parse_progress(data)
+        self.taskLogger.info(data)
 
     def _handle_finished(self):
         """ffmpeg 执行完成"""

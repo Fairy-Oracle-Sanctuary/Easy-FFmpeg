@@ -284,8 +284,9 @@ class TaskInterface(ScrollArea):
 
         name = file_path.name
         output_name = name.replace(file_path.suffix, f"_pressed{file_path.suffix}")
+        output_path = file_path.parent / output_name
         task = FFmpegTask(
-            args=["-i", input_path, *extra_args, output_name, "-y"],
+            args=["-i", input_path, *extra_args, str(output_path), "-y"],
             fileName=name,
             videoPath=input_path,
             saveFolder=file_path.parent,
