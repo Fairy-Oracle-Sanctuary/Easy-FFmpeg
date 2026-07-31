@@ -1,25 +1,22 @@
-# coding:utf-8
-import re
 import logging
+import re
 import weakref
 
 from .setting import CONFIG_FOLDER
-
 
 LOG_FOLDER = CONFIG_FOLDER / "Log"
 _loggers = weakref.WeakValueDictionary()
 
 
 class NoColorFormatter(logging.Formatter):
-
     def format(self, record):
-        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        record.msg = ansi_escape.sub('', record.msg)
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+        record.msg = ansi_escape.sub("", record.msg)
         return super().format(record)
 
 
 def loggerCache(cls):
-    """ decorator for caching logger """
+    """decorator for caching logger"""
 
     def wrapper(name, *args, **kwargs):
         if name not in _loggers:
@@ -35,7 +32,7 @@ def loggerCache(cls):
 
 @loggerCache
 class Logger:
-    """ Logger class """
+    """Logger class"""
 
     def __init__(self, fileName: str, printConsole=True):
         """
@@ -49,13 +46,12 @@ class Logger:
         """
         LOG_FOLDER.mkdir(exist_ok=True, parents=True)
 
-        self.logFile = LOG_FOLDER / (fileName + '.log')
+        self.logFile = LOG_FOLDER / (fileName + ".log")
         self.logFile.parent.mkdir(exist_ok=True, parents=True)
 
         self.__logger = logging.getLogger(fileName)
         self.__consoleHandler = logging.StreamHandler()
-        self.__fileHandler = logging.FileHandler(
-            self.logFile, encoding='utf-8')
+        self.__fileHandler = logging.FileHandler(self.logFile, encoding="utf-8")
 
         # set log level
         self.__logger.setLevel(logging.DEBUG)
@@ -63,10 +59,12 @@ class Logger:
         self.__fileHandler.setLevel(logging.DEBUG)
 
         # set log format
-        fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         self.__consoleHandler.setFormatter(fmt)
 
-        formatter = NoColorFormatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = NoColorFormatter(
+            "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
         self.__fileHandler.setFormatter(formatter)
 
         if not self.__logger.hasHandlers():
@@ -89,3 +87,12 @@ class Logger:
 
     def critical(self, msg):
         self.__logger.critical(msg)
+
+    def close(self):
+        """关闭 log 文件句柄，释放文件占用"""
+        self.__fileHandler.flush()
+        self.__fileHandler.close()
+        self.__logger.removeHandler(self.__fileHandler)
+        if self.__consoleHandler in self.__logger.handlers:
+            self.__logger.removeHandler(self.__consoleHandler)
+            self.__consoleHandler.close()

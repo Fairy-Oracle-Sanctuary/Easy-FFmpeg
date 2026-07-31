@@ -1,13 +1,11 @@
-# coding:utf-8
-from PySide6.QtCore import Qt, Signal, Property
-from PySide6.QtGui import QPixmap, QPainter, QColor
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPainter
+from PySide6.QtWidgets import QVBoxLayout
 
-from libs.qfluentwidgets_pro import IconWidget, CaptionLabel, CardWidget, isDarkTheme
+from libs.qfluentwidgets_pro import CaptionLabel, CardWidget, IconWidget, isDarkTheme
 
 
 class EmptyStatusWidget(CardWidget):
-
     def __init__(self, icon, text, parent=None):
         super().__init__(parent=parent)
         self.iconWidget = IconWidget(icon)
