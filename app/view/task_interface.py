@@ -1,3 +1,6 @@
+import random
+from pathlib import Path
+
 from PySide6.QtCore import QEvent, QSize, Qt, QThreadPool
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -14,21 +17,26 @@ from libs.qfluentwidgets_pro import (
     SegmentedWidget,
     isDarkTheme,
 )
-from pathlib import Path
-import random
 
 from ..common.event_bus import event_bus
-from ..common.text import Text
-from ..common.utils import DeleteFileWorker
-from ..components.task_card import DeleteTaskDialog, FFmpegTaskCard
-from ..service.ffmpeg_service import FFmpegTask, FFmpegWorker
-from ..components.empty_status_widget import EmptyStatusWidget
 from ..common.icon import Logo
 from ..common.task_status import TaskStatus
+from ..common.text import Text
+from ..common.utils import DeleteFileWorker
+from ..components.empty_status_widget import EmptyStatusWidget
+from ..components.task_card import DeleteTaskDialog, FFmpegTaskCard
+from ..service.ffmpeg_service import FFmpegTask, FFmpegWorker
+
 
 class TaskInterface(ScrollArea):
     """任务界面"""
-    _idle_statuses = (TaskStatus.Waiting, TaskStatus.Succeeded, TaskStatus.Failed, TaskStatus.Cancelled)
+
+    _idle_statuses = (
+        TaskStatus.Waiting,
+        TaskStatus.Succeeded,
+        TaskStatus.Failed,
+        TaskStatus.Cancelled,
+    )
 
     def __init__(
         self,
@@ -48,6 +56,7 @@ class TaskInterface(ScrollArea):
 
         self.taskPool = QThreadPool()
         self.taskPool.setMaxThreadCount(2)
+        self.subTaskPool = QThreadPool()
         self.cards = []
         self.cardMap = {}
         self.threadMap = {}
@@ -71,9 +80,13 @@ class TaskInterface(ScrollArea):
             Logo.FACE09,
             Logo.FACE10,
         ]
-        self.lastSelectedemptyStatusIcon = random.randint(0, len(self.emptyStatusIcons) - 1)
+        self.lastSelectedemptyStatusIcon = random.randint(
+            0, len(self.emptyStatusIcons) - 1
+        )
         self.emptyStatusWidget = EmptyStatusWidget(
-            self.emptyStatusIcons[self.lastSelectedemptyStatusIcon], "目前没有任务", self
+            self.emptyStatusIcons[self.lastSelectedemptyStatusIcon],
+            "目前没有任务",
+            self,
         )
 
         self._initWidget()
@@ -89,21 +102,19 @@ class TaskInterface(ScrollArea):
         self.emptyStatusWidget.setMinimumWidth(200)
         self._updateEmptyStatus(False)
 
-        self.segmentedWidget.addItem(self.allTab, self.globalText.All, lambda: self._filterTasks("all"))
+        self.segmentedWidget.addItem(
+            self.allTab, self.globalText.All, lambda: self._filterTasks("all")
+        )
         self.segmentedWidget.addItem(
             self.processingTab,
             "压制中",
             lambda: self._filterTasks(TaskStatus.Processing),
         )
         self.segmentedWidget.addItem(
-            self.completedTab,
-            "成功",
-            lambda: self._filterTasks(TaskStatus.Succeeded)
+            self.completedTab, "成功", lambda: self._filterTasks(TaskStatus.Succeeded)
         )
         self.segmentedWidget.addItem(
-            self.failedTab,
-            "失败",
-            lambda: self._filterTasks(TaskStatus.Failed)
+            self.failedTab, "失败", lambda: self._filterTasks(TaskStatus.Failed)
         )
 
         self.segmentedWidget.setCurrentItem(self.allTab)
@@ -115,7 +126,6 @@ class TaskInterface(ScrollArea):
         # 设置布局
         self.vBoxLayout.addWidget(self.segmentedWidget)
         self.vBoxLayout.addWidget(self.taskListContainer)
-
 
     def _connectSignalToSlot(self):
         event_bus.addTaskSig.connect(self.addTask)
@@ -148,10 +158,12 @@ class TaskInterface(ScrollArea):
         """更新空状态显示"""
         self.emptyStatusWidget.setVisible(show)
         if show:
-            self.lastSelectedemptyStatusIcon = (self.lastSelectedemptyStatusIcon  + 1) % len(self.emptyStatusIcons)
+            self.lastSelectedemptyStatusIcon = (
+                self.lastSelectedemptyStatusIcon + 1
+            ) % len(self.emptyStatusIcons)
             icon = self.emptyStatusIcons[self.lastSelectedemptyStatusIcon]
             self.emptyStatusWidget.setIcon(icon)
-        
+
     def selectAll(self):
         for card in self.cards.copy():
             card.setChecked(True)
@@ -168,14 +180,20 @@ class TaskInterface(ScrollArea):
         # 按需异步删除输出文件
         if deleteFile:
             output_path = Path(card.task.saveFolder) / card.task.outputName
-            self.taskPool.start(DeleteFileWorker(str(output_path)))
+            self.subTaskPool.start(DeleteFileWorker(str(output_path)))
+        # 异步删除日志文件（如果存在）
+        if card.task.logPath:
+            self.subTaskPool.start(DeleteFileWorker(card.task.logPath))
         card.hide()
         card.deleteLater()
+        # 被删卡片如果是选中状态，手动更新计数
+        if card.isChecked():
+            self.selectionCount = max(0, self.selectionCount - 1)
+            if self.selectionCount == 0:
+                self.setSelectionMode(False)
         self._updateEmptyStatus(not self.cards)
         event_bus.taskCountChanged.emit(len(self.cards))
         self._check_failed_tasks()
-
-    _idle_statuses = (TaskStatus.Waiting, TaskStatus.Succeeded, TaskStatus.Failed, TaskStatus.Cancelled)
 
     def _is_idle_card(self, card):
         """是否可删除/可重试（非进行中的任务）"""
@@ -269,9 +287,7 @@ class TaskInterface(ScrollArea):
 
         event_bus.notification_service.show_success(
             "成功",
-            "已添加 {} 个任务，过滤 {} 个重复任务".format(
-                added, len(video_paths) + len(audio_paths) - added
-            ),
+            f"已添加 {added} 个任务，过滤 {len(video_paths) + len(audio_paths) - added} 个重复任务",
         )
         event_bus.taskCountChanged.emit(len(self.cards))
 
@@ -304,8 +320,10 @@ class TaskInterface(ScrollArea):
         self.threadMap[task.task_id] = FFmpegWorker(task)
         self.taskPool.start(self.threadMap[task.task_id])
         return True
-        
-    def _update_task_status(self, task_id, progress, status, size, time, bitrate, speed):
+
+    def _update_task_status(
+        self, task_id, progress, status, size, time, bitrate, speed
+    ):
         """更新任务状态"""
         card = self.cardMap.get(task_id)
         if card:
@@ -313,13 +331,24 @@ class TaskInterface(ScrollArea):
             self._check_failed_tasks()
         else:
             print(f"找不到任务：{task_id}")
-            
-    def _handle_task_finished(self, task_id, success: bool):
+
+    def _handle_task_finished(self, task_id, success: bool, logPath: str):
         """任务完成"""
         card = self.cardMap.get(task_id)
         if card and card.status not in (TaskStatus.Cancelled, TaskStatus.Cancelling):
-            card.updateTask(status=TaskStatus.Succeeded if success else TaskStatus.Failed,
-                            progress=100 if success else 0)
+            card.updateTask(
+                status=TaskStatus.Succeeded if success else TaskStatus.Failed,
+                progress=100 if success else 0,
+            )
+            if success:
+                self.subTaskPool.start(DeleteFileWorker(logPath))
+                event_bus.notification_service.show_success(
+                    "成功", f"已压制完成：{card.task.fileName}"
+                )
+            else:
+                event_bus.notification_service.show_error(
+                    "失败", f"压制失败：{card.task.fileName}"
+                )
             self._check_failed_tasks()
 
     def _handle_cancel_task(self, task_id):

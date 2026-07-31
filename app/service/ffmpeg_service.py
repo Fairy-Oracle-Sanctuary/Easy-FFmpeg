@@ -1,12 +1,12 @@
 import re
 import time
 
-from PySide6.QtCore import QEventLoop, QProcess, QRunnable, QDateTime
+from PySide6.QtCore import QDateTime, QEventLoop, QProcess, QRunnable
 
 from ..common.config import cfg
 from ..common.event_bus import event_bus
-from ..common.task_status import TaskStatus
 from ..common.logger import Logger
+from ..common.task_status import TaskStatus
 
 # 解析 ffmpeg 输出
 DURATION_RE = re.compile(r"Duration: (\d{2}):(\d{2}):(\d{2}\.\d+)")
@@ -19,7 +19,14 @@ SPEED_RE = re.compile(r"speed=\s*([\d.]+)")
 class FFmpegTask:
     _task_id = 0
 
-    def __init__(self, args: list, fileName: str, videoPath: str, saveFolder: str, outputName: str = ""):
+    def __init__(
+        self,
+        args: list,
+        fileName: str,
+        videoPath: str,
+        saveFolder: str,
+        outputName: str = "",
+    ):
         FFmpegTask._task_id += 1
         self.task_id: int = FFmpegTask._task_id
         self.args: list = args
@@ -29,7 +36,8 @@ class FFmpegTask:
         self.outputName = outputName
         self.logPath = None
         self.createTime = QDateTime.currentDateTime()
-        
+
+
 class FFmpegWorker(QRunnable):
     def __init__(self, task: FFmpegTask):
         super().__init__()
@@ -42,15 +50,24 @@ class FFmpegWorker(QRunnable):
     def run(self):
         # create logger
         currentTime = self.task.createTime.toString("yyyy-MM-dd_hh-mm-ss")
-        self.taskLogger = Logger("Tasks/" + currentTime, False)
+        self.taskLogger = Logger(
+            "Tasks/" + currentTime + f"_taskID-{self.task.task_id}", False
+        )
         self.task.logPath = str(self.taskLogger.logFile.absolute())
+        message = f"addTask args: {cfg.get(cfg.ffmpegPath)} {' '.join(self.args)}"
+        self.taskLogger.info(message)
 
         self.process = QProcess()
         self.process.readyReadStandardError.connect(self._handle_stderr)
         self.process.finished.connect(self._handle_finished)
         event_bus.updateTaskStatusSig.emit(
-            self.task.task_id, 0, TaskStatus.Pending,
-            "0KiB", 0.0, "0kbits/s", 0.0,
+            self.task.task_id,
+            0,
+            TaskStatus.Pending,
+            "0KiB",
+            0.0,
+            "0kbits/s",
+            0.0,
         )
         loop = QEventLoop()
         self.process.finished.connect(loop.quit)
@@ -107,17 +124,28 @@ class FFmpegWorker(QRunnable):
             speed = round(float(speed_match.group(1)), 2)
 
         event_bus.updateTaskStatusSig.emit(
-            self.task.task_id, progress, TaskStatus.Processing,
-            size, current, bitrate, speed,
+            self.task.task_id,
+            progress,
+            TaskStatus.Processing,
+            size,
+            current,
+            bitrate,
+            speed,
         )
 
     def _handle_stderr(self):
         """ffmpeg 全部输出到 stderr"""
-        data = self.process.readAllStandardError().data().decode("utf-8", errors="ignore")
+        data = (
+            self.process.readAllStandardError().data().decode("utf-8", errors="ignore")
+        )
         self._try_parse_duration(data)
         self._parse_progress(data)
         self.taskLogger.info(data)
 
     def _handle_finished(self):
         """ffmpeg 执行完成"""
-        event_bus.finishTaskSig.emit(self.task.task_id, self.process.exitCode() == 0)
+        exit_code = self.process.exitCode()
+        self.taskLogger.close()
+        event_bus.finishTaskSig.emit(
+            self.task.task_id, exit_code == 0, self.task.logPath
+        )

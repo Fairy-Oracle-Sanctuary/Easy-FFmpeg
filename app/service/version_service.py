@@ -1,6 +1,7 @@
+import json
 import re
+import urllib.request
 
-import requests
 from PySide6.QtCore import QVersionNumber
 
 from ..common.setting import VERSION
@@ -22,20 +23,19 @@ class VersionService:
         }
 
         try:
-            response = requests.get(
-                url, headers=headers, timeout=5, allow_redirects=True
-            )
-            response.raise_for_status()
+            request = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(request, timeout=5) as response:
+                data = json.loads(response.read().decode("utf-8"))
 
             # parse version
-            version = response.json()["tag_name"]  # type:str
+            version = data["tag_name"]  # type:str
             match = self.versionPattern.search(version)
             if not match:
                 return VERSION
 
             self.lastestVersion = version[1:]
             return self.lastestVersion
-        except requests.exceptions.HTTPError as e:
+        except Exception as e:
             print(f"Error getting latest version: {e}")
 
     def hasNewVersion(self) -> bool:

@@ -5,7 +5,7 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Easy FFmpeg"
 #define MyAppURL "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
-#define MyAppExeName "Easy-FFmpeg.exe"
+#define MyAppExeName "Easy_FFmpeg.exe"
 #define MyAppAssocName MyAppName + "文件"
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
@@ -39,7 +39,7 @@ PrivilegesRequired=admin
 OutputBaseFilename=Easy-FFmpeg
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=D:\Easy-FFmpeg\app\resource\images\logo.ico
+SetupIconFile=D:\CODE\Easy-FFmpeg-PySide6\app\resource\images\logo.ico
 
 [Languages]
 Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"

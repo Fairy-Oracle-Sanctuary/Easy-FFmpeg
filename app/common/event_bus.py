@@ -1,9 +1,17 @@
 # core/event_bus.py
 from PySide6.QtCore import QObject, Signal
+
 from ..common.task_status import TaskStatus
+
 
 class GlobalEventBus(QObject):
     """全局事件总线，负责组件间通信"""
+
+    # 应用消息信号
+    appMessageSig = Signal(str)
+
+    # 应用错误信号
+    appErrorSig = Signal(str)
 
     # 检查更新
     checkUpdateSig = Signal()
@@ -15,13 +23,13 @@ class GlobalEventBus(QObject):
     addTaskSig = Signal(set, set)  # 视频文件集合，音频文件集合
 
     # 任务完成
-    finishTaskSig = Signal(int, bool)  # task_id, 是否成功
+    finishTaskSig = Signal(int, bool, str)  # task_id, 是否成功, logPath
 
     # 删除任务
     deleteTaskSig = Signal(int, bool)  # task_id, 是否同时删除文件
 
     # 更新任务状态进度
-    updateTaskStatusSig = Signal(int, int, TaskStatus, str, float, str, float)  
+    updateTaskStatusSig = Signal(int, int, TaskStatus, str, float, str, float)
     #                         task_id, progress, status, size, time, bitrate, speed
 
     # 取消任务

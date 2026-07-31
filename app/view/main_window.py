@@ -1,8 +1,8 @@
 import sys
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
 from app.common.event_bus import event_bus
 from app.common.setting import RELEASE_URL
@@ -14,14 +14,16 @@ from app.view.setting_interface import SettingInterface
 from app.view.task_interface import TaskInterface
 from libs.qfluentwidgets_pro import FluentIcon as FIF
 from libs.qfluentwidgets_pro import (
-    InfoBarPosition,
     InfoBadge,
     InfoBadgePosition,
+    InfoBarPosition,
     InfoLevel,
     MessageBox,
     TopFluentWindow,
     TopNavigationItemPosition,
 )
+
+from ..components.system_tray_icon import SystemTrayIcon
 
 
 class MainWindow(TopFluentWindow):
@@ -38,7 +40,10 @@ class MainWindow(TopFluentWindow):
         # 初始化通知服务
         self.notification_service = NotificationService(self)
 
-        # 可以自定义配置（可选）
+        # 初始化系统托盘
+        self.systemTrayIcon = SystemTrayIcon(self)
+
+        # 可以自定义配置
         self.notification_service.set_default_duration(3000)
         self.notification_service.set_position(InfoBarPosition.BOTTOM_RIGHT)
         event_bus.notification_service = self.notification_service
@@ -46,6 +51,8 @@ class MainWindow(TopFluentWindow):
         self._initNavigation()
 
         self._connectSignalToSlot()
+
+        self.onInitFinished()
 
     def _initWindow(self):
         w, h = 680, 577
@@ -99,6 +106,14 @@ class MainWindow(TopFluentWindow):
         event_bus.checkUpdateSig.connect(self.checkUpdate)
         event_bus.taskCountChanged.connect(self._updateTaskBadge)
         event_bus.hasFailedTasks.connect(self._updateBadgeLevel)
+        event_bus.appMessageSig.connect(self.onMessage)
+        event_bus.appErrorSig.connect(self.onError)
+        self.systemTrayIcon.messageClicked.connect(self.onSystemTrayMessageClicked)
+        self.systemTrayIcon.activated.connect(self.onSystemTrayActivated)
+
+    def onInitFinished(self):
+        """初始化完成"""
+        self.systemTrayIcon.show()
 
     def _updateBadgeLevel(self, hasFailed: bool):
         """有失败任务时角标变橙色警告"""
@@ -146,3 +161,49 @@ class MainWindow(TopFluentWindow):
                 self.globalText.NoNewVersion,
                 self.globalText.FKWIUTD,
             )
+
+    def onMessage(self, message: str):
+        """系统消息"""
+        if message == "show":
+            if self.windowState() & Qt.WindowMinimized:
+                self.showNormal()
+            else:
+                self.show()
+                self.raise_()
+        elif message == "hide":
+            self.hide()
+        elif message == "switch":
+            if self.isMinimized() or not self.isVisible():
+                self.showNormal() if self.isMinimized() else self.show()
+                self.raise_()
+                self.activateWindow()
+            else:
+                self.hide()
+        else:
+            self.switchTo(self.homeInterface)
+            self.show()
+
+    def onError(self, message: str):
+        """系统错误消息"""
+
+    def onSystemTrayMessageClicked(self):
+        """系统托盘消息点击"""
+        self.onMessage("show")
+
+    def onSystemTrayActivated(self, reason: QSystemTrayIcon.ActivationReason):
+        """系统托盘点击事件"""
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self.onMessage("show")
+
+    def closeEvent(self, event):
+        event.ignore()
+        self.hide()
+        self.systemTrayIcon.showMessage(
+            "Easy-FFmpeg",
+            "程序已最小化到系统托盘",
+            QIcon(":/app/images/logo.png"),
+        )
+
+    def onExit(self):
+        """exit main window"""
+        self.systemTrayIcon.hide()

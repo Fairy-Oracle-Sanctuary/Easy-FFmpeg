@@ -1,7 +1,6 @@
-from enum import Enum
 from pathlib import Path
 
-from PySide6.QtCore import QFileInfo, Qt, Signal, QDateTime
+from PySide6.QtCore import QDateTime, QFileInfo, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QFileIconProvider, QHBoxLayout, QVBoxLayout
 
@@ -24,12 +23,9 @@ from libs.qfluentwidgets_pro import (
 )
 
 from ..common.event_bus import event_bus
-from ..common.utils import showInFolder, openUrl
-from ..service.ffmpeg_service import FFmpegTask
-
-
 from ..common.task_status import TaskStatus
-
+from ..common.utils import openUrl, showInFolder
+from ..service.ffmpeg_service import FFmpegTask
 
 
 class TaskCardBase(CardWidget):
@@ -116,7 +112,15 @@ class FFmpegTaskCard(TaskCardBase):
         self.task = task
         self.task_id = task.task_id
         self.status = TaskStatus.Waiting
-        self.statusText = ["等待中", "初始化中", "压制中", "失败", "成功", "正在取消", "已取消"]
+        self.statusText = [
+            "等待中",
+            "初始化中",
+            "压制中",
+            "失败",
+            "成功",
+            "正在取消",
+            "已取消",
+        ]
         self.imageLabel = ImageLabel()
         self.fileNameLabel = BodyLabel(task.fileName)
         self.progressBar = ProgressBar()
@@ -276,9 +280,9 @@ class FFmpegTaskCard(TaskCardBase):
 
     def _updateInfo(self, size, time, bitrate, speed):
         self.sizeLabel.setText(str(size))
-        self.timeLabel.setText(str(time)+"s")
+        self.timeLabel.setText(str(time) + "s")
         self.bitrateLabel.setText(str(bitrate))
-        self.speedLabel.setText(str(speed)+"x")
+        self.speedLabel.setText(str(speed) + "x")
 
     def _updateInfoVisible(self, visible: bool):
         self.sizeIcon.setVisible(visible)
@@ -292,10 +296,19 @@ class FFmpegTaskCard(TaskCardBase):
         self.finishTimeIcon.setVisible(not visible)
         self.finishTimeLabel.setVisible(not visible)
         if not visible:
-            self.finishTimeLabel.setText(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"))
+            self.finishTimeLabel.setText(
+                QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
+            )
 
-
-    def updateTask(self, progress=0, status=TaskStatus.Waiting, size="0KiB", time=0.0, bitrate="0kbits/s", speed=0.0):
+    def updateTask(
+        self,
+        progress=0,
+        status=TaskStatus.Waiting,
+        size="0KiB",
+        time=0.0,
+        bitrate="0kbits/s",
+        speed=0.0,
+    ):
         self.progressBar.setValue(progress)
         self._updateStatus(status)
         self._updateInfo(size, time, bitrate, speed)
@@ -304,18 +317,18 @@ class FFmpegTaskCard(TaskCardBase):
         event_bus.deleteTaskSig.emit(self.task.task_id, deleteFile)
 
     def _onOpenButtonClicked(self):
-        path = Path(self.task.saveFolder) / self.task.outputName  
+        path = Path(self.task.saveFolder) / self.task.outputName
         showInFolder(path)
-    
+
     def _onCancelButtonClicked(self):
         event_bus.cancelTaskSig.emit(self.task.task_id)
-    
+
     def _onLogButtonClicked(self):
         openUrl(self.task.logPath)
-    
+
     def _onRetryButtonClicked(self):
         event_bus.retryTaskSig.emit(self.task.task_id)
-    
+
     # def removeTask(self, deleteFile=False):
     #     if not self.task.isRunning():
     #         return
@@ -337,9 +350,7 @@ class DeleteTaskDialog(MessageBoxBase):
     def __init__(self, parent=None, showCheckBox=True, deleteOnClose=True):
         super().__init__(parent)
         self.titleLabel = SubtitleLabel("删除任务", self)
-        self.contentLabel = BodyLabel(
-            "确认删除任务吗？", self
-        )
+        self.contentLabel = BodyLabel("确认删除任务吗？", self)
         self.deleteFileCheckBox = CheckBox("删除文件", self)
 
         self.deleteFileCheckBox.setVisible(showCheckBox)
