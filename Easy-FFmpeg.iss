@@ -5,7 +5,7 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Easy FFmpeg"
 #define MyAppURL "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
-#define MyAppExeName "Easy_FFmpeg.exe"
+#define MyAppExeName "Easy-FFmpeg.exe"
 #define MyAppAssocName MyAppName + "文件"
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
@@ -53,7 +53,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "C:\Users\ZHANGBaoHang\Desktop\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\CODE\Fairy-Kekkai-Workshop\dist\Fairy-Kekkai-Workshop.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\CODE\Easy-FFmpeg-PySide6\dist\Easy-FFmpeg.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; 注意：不要在任何共享系统文件上使用 "Flags: ignoreversion" 
 
 [Registry]
