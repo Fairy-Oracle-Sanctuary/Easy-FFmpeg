@@ -2,7 +2,7 @@ import json
 import re
 import urllib.request
 
-from PySide6.QtCore import QVersionNumber
+from PySide6.QtCore import QThread, QVersionNumber, Signal
 
 from ..common.setting import VERSION
 
@@ -43,3 +43,17 @@ class VersionService:
         version = QVersionNumber.fromString(self.getLatestVersion())
         currentVersion = QVersionNumber.fromString(self.currentVersion)
         return version > currentVersion
+
+
+class VersionCheckThread(QThread):
+    """后台检查版本更新，避免阻塞 UI"""
+
+    finished = Signal(bool, str)  # hasNewVersion, latestVersion
+
+    def __init__(self, versionService: VersionService, parent=None):
+        super().__init__(parent)
+        self.versionService = versionService
+
+    def run(self):
+        hasNew = self.versionService.hasNewVersion()
+        self.finished.emit(hasNew, self.versionService.lastestVersion)

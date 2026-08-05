@@ -37,6 +37,8 @@ if sys.platform == "win32":
         "--nofollow-import-to=PySide6.QtQuickWidgets",
         "--nofollow-import-to=PySide6.QtPrintSupport",
         "--nofollow-import-to=PySide6.QtOpenGL",
+        "--nofollow-import-to=PySide6.QtPdf",
+        "--nofollow-import-to=pythoncom",
         # 链接期优化，显著减小 exe 体积
         "--lto=yes",
         # 去掉未使用的 Qt 翻译文件
@@ -71,3 +73,41 @@ else:
 
 
 os.system(" ".join(args))
+
+
+def cleanup_dist(dist_dir: str):
+    """编译后清理 dist 中多余的 Qt 插件/dll（Nuitka 插件集无法精确到单个插件）"""
+    removable = [
+        # QtPdf 误收集（正常已被 --nofollow-import-to 拦截，双保险）
+        "qt6pdf.dll",
+        "qt6pdfwidgets.dll",
+        "pythoncom39.dll",
+        # platforms：qwindows 已够用，qdirect2d 是多余的软件渲染后端
+        r"PySide6\qt-plugins\platforms\qdirect2d.dll",
+        # imageformats：应用只用 png/jpg/ico/svg，其余格式解码插件全部多余
+        r"PySide6\qt-plugins\imageformats\qwebp.dll",
+        r"PySide6\qt-plugins\imageformats\qtiff.dll",
+        r"PySide6\qt-plugins\imageformats\qicns.dll",
+        r"PySide6\qt-plugins\imageformats\qtga.dll",
+        r"PySide6\qt-plugins\imageformats\qwbmp.dll",
+        r"PySide6\qt-plugins\imageformats\qpdf.dll",
+        r"PySide6\qt-plugins\imageformats\qgif.dll",
+        # tls：保留 openssl + schannel 后端即可，certonly 冗余
+        r"PySide6\qt-plugins\tls\qcertonlybackend.dll",
+    ]
+    removed = 0
+    for rel in removable:
+        fp = os.path.join(dist_dir, rel)
+        if os.path.isfile(fp):
+            size = os.path.getsize(fp)
+            os.remove(fp)
+            removed += size
+            print(f"  清理 {rel} ({size / 1024:.0f} KB)")
+    if removed:
+        print(f"  共清理 {removed / 1024 / 1024:.1f} MB")
+
+
+if sys.platform == "win32":
+    dist_dir = os.path.join("dist", "Easy-FFmpeg.dist")
+    if os.path.isdir(dist_dir):
+        cleanup_dist(dist_dir)

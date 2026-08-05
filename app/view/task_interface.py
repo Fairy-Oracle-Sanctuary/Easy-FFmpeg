@@ -1,4 +1,5 @@
 import random
+import shlex
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QSize, Qt, QThreadPool
@@ -18,11 +19,12 @@ from libs.qfluentwidgets_pro import (
     isDarkTheme,
 )
 
+from ..common.config import cfg
 from ..common.event_bus import event_bus
 from ..common.icon import Logo
 from ..common.task_status import TaskStatus
 from ..common.text import Text
-from ..common.utils import DeleteFileWorker
+from ..common.utils import DeleteFileWorker, classifyMediaPaths
 from ..components.empty_status_widget import EmptyStatusWidget
 from ..components.task_card import DeleteTaskDialog, FFmpegTaskCard
 from ..service.ffmpeg_service import FFmpegTask, FFmpegWorker
@@ -98,6 +100,8 @@ class TaskInterface(ScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setObjectName("taskInterface")
         self.enableTransparentBackground()
+        self.setAcceptDrops(True)
+        self.viewport().setAcceptDrops(True)
 
         self.emptyStatusWidget.setMinimumWidth(200)
         self._updateEmptyStatus(False)
@@ -274,36 +278,210 @@ class TaskInterface(ScrollArea):
         y = self.height() // 2 - h // 2
         self.emptyStatusWidget.move(int(self.width() / 2 - w / 2), y)
 
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        if not event.mimeData().hasUrls():
+            event.ignore()
+            return
+
+        paths = [
+            url.toLocalFile() for url in event.mimeData().urls() if url.isLocalFile()
+        ]
+        video_set, audio_set = classifyMediaPaths(paths, cfg.get(cfg.homeRecursive))
+
+        if video_set or audio_set:
+            event_bus.addTaskSig.emit(video_set, audio_set)
+
+        event.acceptProposedAction()
+
+    @staticmethod
+    def _get_output_name(file_path) -> str:
+        """根据输入路径生成输出文件名"""
+        return file_path.name.replace(file_path.suffix, f"_pressed{file_path.suffix}")
+
+    def _build_custom_args(self, template: str, file_path) -> list:
+        """从自定义参数模板构建 ffmpeg args 列表
+
+        先用 shlex 解析模板结构，再替换占位符 token，
+        避免 Windows 路径中的反斜杠被当作转义字符。
+        """
+        output_name = self._get_output_name(file_path)
+        output_path = str(file_path.parent / output_name)
+        input_path = str(file_path)
+
+        tokens = shlex.split(template)
+        # 去掉开头的 ffmpeg 可执行文件名（实际路径由 FFmpegWorker 注入）
+        if tokens and Path(tokens[0]).name.lower().startswith("ffmpeg"):
+            tokens = tokens[1:]
+
+        # 替换占位符（在已 split 的 token 上替换，路径不会被二次解析）
+        return [
+            token.replace("{{input_file}}", input_path).replace(
+                "{{output_file}}", output_path
+            )
+            for token in tokens
+        ]
+
+    def _build_default_args(self, file_path, is_audio: bool = False) -> list:
+        """根据高级设置构建默认 ffmpeg args 列表
+
+        Parameters
+        ----------
+        file_path : Path
+            输入文件路径
+        is_audio : bool
+            是否为纯音频文件（跳过视频相关参数块）
+        """
+        output_name = self._get_output_name(file_path)
+        output_path = str(file_path.parent / output_name)
+        input_path = str(file_path)
+        enabled = cfg.get(cfg.ffmpegEnabledBlocks)
+
+        args = []
+
+        # 进阶：裁剪（放 -i 前作为输入选项，seek 更快）
+        if "extra" in enabled:
+            start = str(cfg.get(cfg.ffmpegStartTime)).strip()
+            if start:
+                args += ["-ss", start]
+            duration = str(cfg.get(cfg.ffmpegDuration)).strip()
+            if duration:
+                args += ["-t", duration]
+
+        args += ["-i", input_path]
+
+        # 视频参数（纯音频文件跳过）
+        if not is_audio:
+            is_soft_x264 = not cfg.get(cfg.ffmpegUseHardWareVideoCodec) and cfg.get(
+                cfg.ffmpegSoftWareVideoCodec
+            ) in ("libx264", "libx265")
+
+            # 编码器
+            if "encoder" in enabled:
+                if cfg.get(cfg.ffmpegUseHardWareVideoCodec):
+                    args += ["-c:v", cfg.get(cfg.ffmpegHardWareVideoCodec)]
+                else:
+                    args += ["-c:v", cfg.get(cfg.ffmpegSoftWareVideoCodec)]
+
+            # 质量控制
+            if "quality" in enabled:
+                if cfg.get(cfg.ffmpegQualityMode) == "CRF":
+                    args += ["-crf", str(cfg.get(cfg.ffmpegCrf))]
+                else:
+                    args += ["-b:v", f"{cfg.get(cfg.ffmpegVideoBitrate)}k"]
+                    # TODO: two-pass 需要双进程架构支持，暂未实现
+
+            # 编码速度预设（仅 libx264/libx265 软件编码生效）
+            if "preset" in enabled and is_soft_x264:
+                args += ["-preset", cfg.get(cfg.ffmpegPreset)]
+
+            # 进阶：tune 调优（仅 libx264/libx265 软件编码生效）
+            if "extra" in enabled and is_soft_x264:
+                tune = cfg.get(cfg.ffmpegTune)
+                if tune != "none":
+                    args += ["-tune", tune]
+
+            # 滤镜链（分辨率 / 反交错 / 旋转合并为一个 -vf）
+            filters = []
+            if "resolution" in enabled:
+                res = cfg.get(cfg.ffmpegResolution)
+                if res == "1080p":
+                    filters.append("scale=-2:1080")
+                elif res == "720p":
+                    filters.append("scale=-2:720")
+                elif res == "480p":
+                    filters.append("scale=-2:480")
+                elif res == "custom":
+                    filters.append(f"scale={cfg.get(cfg.ffmpegCustomWidth)}:-2")
+
+            if "extra" in enabled:
+                if cfg.get(cfg.ffmpegDeinterlace):
+                    filters.append("yadif")
+                rotation = cfg.get(cfg.ffmpegRotation)
+                if rotation == "90":
+                    filters.append("transpose=1")
+                elif rotation == "180":
+                    filters.append("transpose=1,transpose=1")
+                elif rotation == "270":
+                    filters.append("transpose=2")
+
+            if filters:
+                args += ["-vf", ",".join(filters)]
+
+            # 帧率
+            if "frame_rate" in enabled:
+                fps = cfg.get(cfg.ffmpegFrameRate)
+                if fps != "origin":
+                    args += ["-r", str(fps)]
+
+        # 音频
+        if "audio" in enabled:
+            if cfg.get(cfg.ffmpegRemoveAudio):
+                args += ["-an"]
+            else:
+                audio_codec = cfg.get(cfg.ffmpegAudioCodec)
+                args += ["-c:a", audio_codec]
+                if audio_codec != "copy":
+                    args += ["-b:a", cfg.get(cfg.ffmpegAudioBitrate)]
+
+        args += [output_path, "-y"]
+        return args
+
     def addTask(self, video_paths: set, audio_paths: set):
         """添加任务"""
         added = 0
-        # 视频: libx264，音频: libmp3lame
-        for file_path, extra_args in [
-            *((p, ["-c:v", "libx264", "-preset", "ultrafast"]) for p in video_paths),
-            *((p, ["-c:a", "libmp3lame"]) for p in audio_paths),
-        ]:
-            if self._add_single_task(file_path, extra_args):
-                added += 1
+        total = len(video_paths) + len(audio_paths)
+
+        if cfg.get(cfg.ffmpegIsUseCustomArgs):
+            # 自定义参数模式：使用用户填写的命令行模板
+            video_template = cfg.get(cfg.ffmpegCustomVideoArgs)
+            audio_template = cfg.get(cfg.ffmpegCustomAudioArgs)
+            for file_path, template in [
+                *((p, video_template) for p in video_paths),
+                *((p, audio_template) for p in audio_paths),
+            ]:
+                args = self._build_custom_args(template, file_path)
+                if self._add_single_task(file_path, args):
+                    added += 1
+        else:
+            # 默认参数模式：根据高级设置配置项拼装参数
+            for file_path in video_paths:
+                args = self._build_default_args(file_path, is_audio=False)
+                if self._add_single_task(file_path, args):
+                    added += 1
+            for file_path in audio_paths:
+                args = self._build_default_args(file_path, is_audio=True)
+                if self._add_single_task(file_path, args):
+                    added += 1
 
         event_bus.notification_service.show_success(
             "成功",
-            f"已添加 {added} 个任务，过滤 {len(video_paths) + len(audio_paths) - added} 个重复任务",
+            f"已添加 {added} 个任务，过滤 {total - added} 个重复任务",
         )
         event_bus.taskCountChanged.emit(len(self.cards))
 
-    def _add_single_task(self, file_path, extra_args: list) -> bool:
+    def _add_single_task(self, file_path, args: list) -> bool:
         """添加单个任务，返回是否成功添加（非重复）"""
         input_path = str(file_path)
         if input_path in self._input_paths:
             return False
         self._input_paths.add(input_path)
 
-        name = file_path.name
-        output_name = name.replace(file_path.suffix, f"_pressed{file_path.suffix}")
-        output_path = file_path.parent / output_name
+        output_name = self._get_output_name(file_path)
         task = FFmpegTask(
-            args=["-i", input_path, *extra_args, str(output_path), "-y"],
-            fileName=name,
+            args=args,
+            fileName=file_path.name,
             videoPath=input_path,
             saveFolder=file_path.parent,
             outputName=output_name,
@@ -345,9 +523,15 @@ class TaskInterface(ScrollArea):
                 event_bus.notification_service.show_success(
                     "成功", f"已压制完成：{card.task.fileName}"
                 )
+                event_bus.trayMessageSig.emit(
+                    "Easy-FFmpeg", f"已压制完成：{card.task.fileName}", "info"
+                )
             else:
                 event_bus.notification_service.show_error(
                     "失败", f"压制失败：{card.task.fileName}"
+                )
+                event_bus.trayMessageSig.emit(
+                    "Easy-FFmpeg", f"压制失败：{card.task.fileName}", "warning"
                 )
             self._check_failed_tasks()
 

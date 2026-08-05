@@ -7,6 +7,9 @@ from ..common.task_status import TaskStatus
 class GlobalEventBus(QObject):
     """全局事件总线，负责组件间通信"""
 
+    # 云母效果启用状态变化
+    micaEnableChanged = Signal(bool)
+
     # 应用消息信号
     appMessageSig = Signal(str)
 
@@ -15,6 +18,9 @@ class GlobalEventBus(QObject):
 
     # 检查更新
     checkUpdateSig = Signal()
+
+    # 检查更新状态变化 True=开始检查 False=完成
+    checkUpdateStateChanged = Signal(bool)
 
     # 通知服务
     notification_service = None
@@ -43,6 +49,9 @@ class GlobalEventBus(QObject):
 
     # 是否存在失败任务
     hasFailedTasks = Signal(bool)
+
+    # 托盘消息 (title, message, type)  type: "info" | "warning"
+    trayMessageSig = Signal(str, str, str)
 
 
 # 创建全局单例

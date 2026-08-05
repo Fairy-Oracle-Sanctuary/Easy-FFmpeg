@@ -15,5 +15,26 @@
         <file>images/logo/Face09.svg</file>
         <file>images/logo/Face10.svg</file>
 
+        <file>images/logo/Gear.svg</file>
+        <file>images/logo/High-voltage.svg</file>
+        <file>images/logo/Factory.svg</file>
+        <file>images/logo/Rocket.svg</file>
+        <file>images/logo/Control-knobs.svg</file>
+        <file>images/logo/Star.svg</file>
+        <file>images/logo/Bar-chart.svg</file>
+        <file>images/logo/Repeat-button.svg</file>
+        <file>images/logo/Stopwatch.svg</file>
+        <file>images/logo/Television.svg</file>
+        <file>images/logo/Input-numbers.svg</file>
+        <file>images/logo/Film-frames.svg</file>
+        <file>images/logo/Musical-note.svg</file>
+        <file>images/logo/Loudspeaker.svg</file>
+        <file>images/logo/Muted-speaker.svg</file>
+        <file>images/logo/Magic-wand.svg</file>
+        <file>images/logo/Alarm-clock.svg</file>
+        <file>images/logo/Timer-clock.svg</file>
+        <file>images/logo/Wavy-dash.svg</file>
+        <file>images/logo/Curly-loop.svg</file>
+
     </qresource>
 </RCC>

@@ -46,6 +46,46 @@ def safeRemoveFile(filePath) -> bool:
         return False
 
 
+def classifyMediaPaths(paths, recursive=False):
+    """将路径列表分类为视频集合和音频集合
+
+    Parameters
+    ----------
+    paths : list[str]
+        文件/文件夹路径列表
+    recursive : bool
+        是否递归遍历文件夹
+
+    Returns
+    -------
+    tuple[set[Path], set[Path]]
+        (视频文件集合, 音频文件集合)
+    """
+    from .setting import AUDIO_CONTAINERS, VIDEO_CONTAINERS
+
+    video_set = set()
+    audio_set = set()
+
+    for path_str in paths:
+        path = Path(path_str)
+        if not path.exists():
+            continue
+        if path.is_file():
+            if path.suffix.lower() in VIDEO_CONTAINERS:
+                video_set.add(path)
+            elif path.suffix.lower() in AUDIO_CONTAINERS:
+                audio_set.add(path)
+        elif path.is_dir():
+            iterator = path.rglob("*") if recursive else path.iterdir()
+            for item in iterator:
+                if item.is_file() and item.suffix.lower() in VIDEO_CONTAINERS:
+                    video_set.add(item)
+                elif item.is_file() and item.suffix.lower() in AUDIO_CONTAINERS:
+                    audio_set.add(item)
+
+    return video_set, audio_set
+
+
 class DeleteFileWorker(QRunnable):
     """异步删除文件"""
 
