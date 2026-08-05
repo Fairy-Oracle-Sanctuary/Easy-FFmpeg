@@ -470,6 +470,9 @@ class TaskInterface(ScrollArea):
             f"已添加 {added} 个任务，过滤 {total - added} 个重复任务",
         )
         event_bus.taskCountChanged.emit(len(self.cards))
+        # 切到"全部"tab 并刷新空状态
+        self.segmentedWidget.setCurrentItem(self.allTab)
+        self._filterTasks("all")
 
     def _add_single_task(self, file_path, args: list) -> bool:
         """添加单个任务，返回是否成功添加（非重复）"""

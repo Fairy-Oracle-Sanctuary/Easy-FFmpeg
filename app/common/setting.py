@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -13,10 +14,17 @@ else:
 
 RELEASE_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases"
 GITHUB_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
+FEEDBACK_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/issues"
 OFFICIAL_WEBSITE = ""
 FFMPEG_WEBSITE = "https://ffmpeg.org/"
 
-CONFIG_FOLDER = Path("AppData").absolute()
+# 统一放用户目录，避免权限问题和路径漂移
+if sys.platform == "win32":
+    CONFIG_FOLDER = Path(os.environ.get("APPDATA", str(Path.home()))) / "EasyFFmpeg"
+elif sys.platform == "darwin":
+    CONFIG_FOLDER = Path.home() / "Library" / "Application Support" / "EasyFFmpeg"
+else:
+    CONFIG_FOLDER = Path.home() / ".config" / "EasyFFmpeg"
 
 CONFIG_FILE = CONFIG_FOLDER / "config.json"
 DB_PATH = CONFIG_FOLDER / "database.db"

@@ -29,6 +29,8 @@ from libs.qfluentwidgets_pro import (
 from libs.qfluentwidgets_pro.components.widgets.button import TransparentToolButton
 
 from ..common.config import cfg
+from ..common.setting import FEEDBACK_URL
+from ..common.utils import openUrl
 from ..components.system_tray_icon import SystemTrayIcon
 from ..service.version_service import VersionCheckThread
 from ..view.advance_interface import AdvanceInterface
@@ -157,6 +159,9 @@ class MainWindow(TopFluentWindow):
         self.systemTrayIcon.show()
         if cfg.get(cfg.checkUpdateAtStartUp):
             self.checkUpdate(silent=True)
+        # 处理右键菜单启动时传入的文件
+        if len(sys.argv) > 1:
+            self._handleFileArgs(sys.argv[1:])
 
     def _updateBadgeLevel(self, hasFailed: bool):
         """有失败任务时角标变橙色警告"""
@@ -232,12 +237,33 @@ class MainWindow(TopFluentWindow):
                 self.activateWindow()
             else:
                 self.hide()
-        else:
-            self.switchTo(self.homeInterface)
+        elif message:
+            # 右键菜单传入的文件路径（换行分隔）
+            self._handleFileArgs(message.split("\n"))
+
+    def _handleFileArgs(self, paths: list):
+        """处理右键菜单传入的文件路径"""
+        from pathlib import Path
+
+        from ..common.utils import classifyMediaPaths
+
+        file_paths = [Path(p) for p in paths if p]
+        video, audio = classifyMediaPaths(file_paths, cfg.get(cfg.homeRecursive))
+        if video or audio:
+            event_bus.addTaskSig.emit(video, audio)
+            self.switchTo(self.taskInterface)
             self.show()
+            self.raise_()
 
     def onError(self, message: str):
         """系统错误消息"""
+        QApplication.clipboard().setText(message)
+        self.showMessageBox(
+            "发生未处理异常",
+            "报错信息已写入系统粘贴板和日志文件，是否立即反馈？",
+            True,
+            lambda: openUrl(FEEDBACK_URL),
+        )
 
     def _onTrayMessage(self, title: str, message: str, msg_type: str):
         """显示系统托盘消息"""

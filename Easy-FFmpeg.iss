@@ -1,7 +1,7 @@
 ; 脚本由 Inno Setup 脚本向导生成。
 ; 有关创建 Inno Setup 脚本文件的详细信息，请参阅帮助文档！
 
-#define MyAppName "Fairy Kekkai Workshop"
+#define MyAppName "Easy FFmpeg"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Easy FFmpeg"
 #define MyAppURL "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
@@ -13,7 +13,7 @@
 [Setup]
 ; 注意：AppId 的值唯一标识此应用程序。不要在其他应用程序的安装程序中使用相同的 AppId 值。
 ; (若要生成新的 GUID，请在 IDE 中单击 "工具|生成 GUID"。)
-AppId={{7B31E8C0-F294-4207-9D64-46C4ACFD742F}
+AppId={{82CA8639-031C-4B26-BA52-0E185B4513E3}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
@@ -46,6 +46,7 @@ Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "addrightclick"; Description: "添加右键菜单""用 Easy FFmpeg 压制"""; GroupDescription: "{cm:AdditionalIcons}"
 
 ;[InstallDelete]
 ; 安装前删除旧版本的所有文件和子目录
@@ -61,11 +62,21 @@ Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueTyp
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+Root: HKCR; Subkey: "*\shell\EasyFFmpeg"; ValueType: string; ValueName: ""; ValueData: "用 Easy FFmpeg 压制"; Tasks: addrightclick; Flags: uninsdeletekey
+Root: HKCR; Subkey: "*\shell\EasyFFmpeg"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExeName},0"; Tasks: addrightclick; Flags: uninsdeletevalue
+Root: HKCR; Subkey: "*\shell\EasyFFmpeg\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: addrightclick
+
+; 文件夹右键菜单
+Root: HKCR; Subkey: "Directory\shell\EasyFFmpeg"; ValueType: string; ValueName: ""; ValueData: "用 Easy FFmpeg 压制"; Tasks: addrightclick; Flags: uninsdeletekey
+Root: HKCR; Subkey: "Directory\shell\EasyFFmpeg"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExeName},0"; Tasks: addrightclick; Flags: uninsdeletevalue
+Root: HKCR; Subkey: "Directory\shell\EasyFFmpeg\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: addrightclick
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{userappdata}\EasyFFmpeg"
+
 ; [Run]
 ; Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
