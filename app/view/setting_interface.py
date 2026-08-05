@@ -2,8 +2,6 @@
 # from ..common.icon import Logo
 import shutil
 import subprocess
-import sys
-from pathlib import Path
 
 from PySide6.QtCore import Qt, QThread, QUrl
 from PySide6.QtGui import QDesktopServices, QFont
@@ -77,6 +75,16 @@ class SettingInterface(ScrollArea):
 
         # setting label
         self.settingLabel = TitleLabel(self.globalText.Settings, self)
+
+        # 主页
+        self.homeGroup = SettingCardGroup("主页", self.scrollWidget)
+        self.homeRecursiveCard = SwitchSettingCard(
+            FIF.FOLDER,
+            "递归遍历文件夹",
+            "添加文件夹时是否递归遍历子文件夹中的媒体文件",
+            cfg.homeRecursive,
+            self.homeGroup,
+        )
 
         # 个性化
         self.personalGroup = SettingCardGroup(
@@ -197,6 +205,8 @@ class SettingInterface(ScrollArea):
     def _initLayout(self):
         self.settingLabel.move(36, 40)
 
+        self.homeGroup.addSettingCard(self.homeRecursiveCard)
+
         self.personalGroup.addSettingCard(self.micaCard)
         self.personalGroup.addSettingCard(self.themeCard)
         self.personalGroup.addSettingCard(self.zoomCard)
@@ -213,6 +223,7 @@ class SettingInterface(ScrollArea):
         # add setting card group to layout
         self.expandLayout.setSpacing(26)
         self.expandLayout.setContentsMargins(36, 10, 36, 0)
+        self.expandLayout.addWidget(self.homeGroup)
         self.expandLayout.addWidget(self.personalGroup)
         self.expandLayout.addWidget(self.exeGroup)
         self.expandLayout.addWidget(self.aboutGroup)
@@ -237,54 +248,29 @@ class SettingInterface(ScrollArea):
         self.ffmpegPathCard.setContent(path)
 
     def _detectExe(self, exe_name, url, cfg_item, path_card, version_flag="-version"):
+        """检测可执行文件：先 version 命令验证默认路径，失败再全局查找"""
+        if not hasattr(self, "_pending_detects"):
+            self._pending_detects = {}
+            self._detect_threads = []
+
         exe_path_str = get_default_exe_path(exe_name)
-        exe_path = Path(exe_path_str)
+        self._pending_detects[exe_path_str] = {
+            "name": exe_name,
+            "url": url,
+            "cfg_item": cfg_item,
+            "path_card": path_card,
+            "tried_global": False,
+        }
+        self._startDetect(exe_path_str, version_flag)
 
-        if sys.platform == "darwin":
-            # macOS: app bundle 内的文件无法用 exists判断，通过 version 命令检测
-            exe_path_str = str(exe_path)
-            if not hasattr(self, "_pending_detects"):
-                self._pending_detects = {}
-                self._detect_threads = []
-            self._pending_detects[exe_path_str] = {
-                "name": exe_name,
-                "url": url,
-                "cfg_item": cfg_item,
-                "path_card": path_card,
-            }
-            thread = ExeDetectThread(exe_path_str, version_flag)
-            thread.detected.connect(self._onExeDetected)
-            self._detect_threads.append(thread)
-            thread.start()
-        else:
-            # Windows / Linux: 使用 exists + which 回退
-            if not exe_path.exists() and sys.platform == "win32":
-                exe_path_str = shutil.which(exe_name)
-                if exe_path_str:
-                    exe_path = Path(exe_path_str)
-                else:
-                    exe_path = None
-
-            if exe_path is not None:
-                cfg.set(cfg_item, str(exe_path))
-                event_bus.notification_service.show_success(
-                    self.globalText.DetectionSuccessful,
-                    self.globalText.PathSetTo.format(exe_name, str(exe_path)),
-                )
-                path_card.setContent(str(exe_path))
-            else:
-                dialog = Dialog(
-                    self.globalText.DetectionFailed,
-                    self.globalText.NotFoundDownloadIt.format(exe_name),
-                    self,
-                )
-                dialog.yesButton.setText(self.globalText.GoToDownload)
-                dialog.cancelButton.setText(self.globalText.Cancel)
-                if dialog.exec():
-                    QDesktopServices.openUrl(QUrl(url))
+    def _startDetect(self, exe_path_str, version_flag="-version"):
+        thread = ExeDetectThread(exe_path_str, version_flag)
+        thread.detected.connect(self._onExeDetected)
+        self._detect_threads.append(thread)
+        thread.start()
 
     def _onExeDetected(self, exe_path: str, success: bool):
-        """macOS ExeDetectThread 检测完成回调"""
+        """ExeDetectThread 检测完成回调"""
         info = getattr(self, "_pending_detects", {}).pop(exe_path, None)
         if info is None:
             return
@@ -296,26 +282,37 @@ class SettingInterface(ScrollArea):
                 self.globalText.PathSetTo.format(info["name"], exe_path),
             )
             info["path_card"].setContent(exe_path)
+        elif not info.get("tried_global"):
+            # 默认路径检测失败，尝试全局查找
+            found = shutil.which(info["name"])
+            if found:
+                info["tried_global"] = True
+                self._pending_detects[found] = info
+                self._startDetect(found)
+                return
+            self._showDownloadDialog(info)
         else:
-            dialog = Dialog(
-                self.globalText.DetectionFailed,
-                self.globalText.NotFoundDownloadIt.format(info["name"]),
-                self,
-            )
-            dialog.yesButton.setText(self.globalText.GoToDownload)
-            dialog.cancelButton.setText(self.globalText.Cancel)
-            if dialog.exec():
-                QDesktopServices.openUrl(QUrl(info["url"]))
+            self._showDownloadDialog(info)
 
         # 所有检测完成后恢复按钮
         if not getattr(self, "_pending_detects", {}):
             self.detectionCard.openButton.setEnabled(True)
             self.detectionCard.openButton.setText(self.globalText.Detect)
 
+    def _showDownloadDialog(self, info):
+        dialog = Dialog(
+            self.globalText.DetectionFailed,
+            self.globalText.NotFoundDownloadIt.format(info["name"]),
+            self,
+        )
+        dialog.yesButton.setText(self.globalText.GoToDownload)
+        dialog.cancelButton.setText(self.globalText.Cancel)
+        if dialog.exec():
+            QDesktopServices.openUrl(QUrl(info["url"]))
+
     def _onDectectionCardClicked(self):
         self.detectionCard.openButton.setEnabled(False)
-        if sys.platform == "darwin":
-            self.detectionCard.openButton.setText(self.globalText.Detecting)
+        self.detectionCard.openButton.setText(self.globalText.Detecting)
 
         # ffmpeg
         self._detectExe(
@@ -324,10 +321,6 @@ class SettingInterface(ScrollArea):
             cfg.ffmpegPath,
             self.ffmpegPathCard,
         )
-
-        # Windows/Linux 同步检测，直接恢复按钮；macOS 由 _onExeDetected 回调恢复
-        if sys.platform != "darwin":
-            self.detectionCard.openButton.setEnabled(True)
 
     def _onAccentColorChanged(self):
         color = cfg.get(cfg.accentColor)

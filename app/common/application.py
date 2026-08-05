@@ -1,4 +1,5 @@
 import sys
+import time
 import traceback
 
 from PySide6.QtCore import QIODevice, QSharedMemory, Signal
@@ -26,26 +27,46 @@ class SingletonApplication(QApplication):
         self.memory = QSharedMemory(self)
         self.memory.setKey(key)
 
-        if self.memory.attach():
-            self.isRunning = True
+        # 多进程同时启动时，交替尝试 attach 和 create
+        # 谁先 create 成功谁是主实例，另一个 attach 到它
+        is_attached = False
+        is_creator = False
+        for _ in range(30):  # 最多等待 3 秒
+            if self.memory.attach():
+                is_attached = True
+                break
+            if self.memory.create(1):
+                is_creator = True
+                break
+            # create 也失败（已存在），detach 清理状态后重试
+            self.memory.detach()
+            time.sleep(0.1)
 
-            self.sendMessage(" ".join(argv[1:]) if len(argv) > 1 else "show")
+        if is_attached:
+            self.isRunning = True
+            self.sendMessage("\n".join(argv[1:]) if len(argv) > 1 else "show")
             sys.exit()
 
-        self.isRunning = False
-        if not self.memory.create(1):
-            self.logger.error(self.memory.errorString())
-            raise RuntimeError(self.memory.errorString())
+        if not is_creator:
+            err = self.memory.errorString()
+            self.logger.error(f"Singleton: failed to attach or create: {err}")
+            raise RuntimeError(err)
 
+        self.isRunning = False
         self.server.newConnection.connect(self.__onNewConnection)
         QLocalServer.removeServer(key)
         self.server.listen(key)
 
     def __onNewConnection(self):
         socket = self.server.nextPendingConnection()
-        if socket.waitForReadyRead(self.timeout):
-            event_bus.appMessageSig.emit(socket.readAll().data().decode("utf-8"))
-            socket.disconnectFromServer()
+        socket.setParent(self)  # 防止 GC
+        socket.readyRead.connect(lambda s=socket: self.__onReadyRead(s))
+
+    def __onReadyRead(self, socket):
+        data = socket.readAll().data().decode("utf-8")
+        event_bus.appMessageSig.emit(data)
+        socket.disconnectFromServer()
+        socket.deleteLater()
 
     def sendMessage(self, message: str):
         """send message to another application"""
