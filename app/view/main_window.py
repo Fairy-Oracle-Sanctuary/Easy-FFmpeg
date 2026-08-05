@@ -19,11 +19,19 @@ from libs.qfluentwidgets_pro import (
     InfoBarPosition,
     InfoLevel,
     MessageBox,
+    Theme,
     TopFluentWindow,
     TopNavigationItemPosition,
+    isDarkTheme,
+    qconfig,
+    toggleTheme,
 )
+from libs.qfluentwidgets_pro.components.widgets.button import TransparentToolButton
 
+from ..common.config import cfg
 from ..components.system_tray_icon import SystemTrayIcon
+from ..service.version_service import VersionCheckThread
+from ..view.advance_interface import AdvanceInterface
 
 
 class MainWindow(TopFluentWindow):
@@ -52,6 +60,8 @@ class MainWindow(TopFluentWindow):
 
         self._connectSignalToSlot()
 
+        self._initThemeButton()
+
         self.onInitFinished()
 
     def _initWindow(self):
@@ -62,6 +72,8 @@ class MainWindow(TopFluentWindow):
         self.setWindowIcon(QIcon(":/app/images/logo.png"))
         self.setWindowTitle("Easy FFmpeg")
 
+        self.setMicaEffectEnabled(cfg.get(cfg.micaEnabled))
+
         desktop = QApplication.primaryScreen().availableGeometry()
         w, h = desktop.width(), desktop.height()
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
@@ -69,6 +81,7 @@ class MainWindow(TopFluentWindow):
     def _initNavigation(self):
         self.homeInterface = HomeInterface(self)
         self.taskInterface = TaskInterface(self)
+        self.advanceInterface = AdvanceInterface(self)
         self.settingInterface = SettingInterface(self)
 
         self.addSubInterface(
@@ -86,10 +99,18 @@ class MainWindow(TopFluentWindow):
             expanded=True,
         )
         self.addSubInterface(
+            self.advanceInterface,
+            FIF.BOOK_SHELF,
+            "高级",
+            TopNavigationItemPosition.LEFT,
+            expanded=True,
+        )
+        self.addSubInterface(
             self.settingInterface,
             FIF.SETTING,
             "设置",
             TopNavigationItemPosition.RIGHT,
+            expanded=False,
         )
 
         self.taskBadge = InfoBadge.attension(
@@ -103,17 +124,39 @@ class MainWindow(TopFluentWindow):
 
     def _connectSignalToSlot(self):
         """连接信号到槽"""
+        event_bus.micaEnableChanged.connect(self.setMicaEffectEnabled)
         event_bus.checkUpdateSig.connect(self.checkUpdate)
         event_bus.taskCountChanged.connect(self._updateTaskBadge)
         event_bus.hasFailedTasks.connect(self._updateBadgeLevel)
         event_bus.appMessageSig.connect(self.onMessage)
         event_bus.appErrorSig.connect(self.onError)
+        event_bus.trayMessageSig.connect(self._onTrayMessage)
         self.systemTrayIcon.messageClicked.connect(self.onSystemTrayMessageClicked)
         self.systemTrayIcon.activated.connect(self.onSystemTrayActivated)
+        qconfig.themeChanged.connect(self._updateThemeButtonIcon)
+
+    def _initThemeButton(self):
+        """在标题栏最小化按钮左侧添加主题切换按钮"""
+        self.themeButton = TransparentToolButton(self.titleBar)
+        # 与最小化按钮尺寸保持一致
+        self.themeButton.setFixedSize(self.titleBar.minBtn.size())
+        self.themeButton.clicked.connect(lambda: toggleTheme())
+        self._updateThemeButtonIcon()
+        # 插入到最小化按钮左侧（buttonLayout: minBtn, maxBtn, closeBtn）
+        self.titleBar.buttonLayout.insertWidget(
+            0, self.themeButton, 0, Qt.AlignmentFlag.AlignTop
+        )
+
+    def _updateThemeButtonIcon(self, theme: Theme = None):
+        """根据当前主题更新按钮图标"""
+        # 深色模式显示太阳（切到浅色），浅色模式显示月亮（切到深色）
+        self.themeButton.setIcon(FIF.BRIGHTNESS if isDarkTheme() else FIF.QUIET_HOURS)
 
     def onInitFinished(self):
         """初始化完成"""
         self.systemTrayIcon.show()
+        if cfg.get(cfg.checkUpdateAtStartUp):
+            self.checkUpdate(silent=True)
 
     def _updateBadgeLevel(self, hasFailed: bool):
         """有失败任务时角标变橙色警告"""
@@ -146,17 +189,27 @@ class MainWindow(TopFluentWindow):
         if w.exec() and yesSlot is not None:
             yesSlot()
 
-    def checkUpdate(self):
-        if self.versionManager.hasNewVersion():
+    def checkUpdate(self, silent=False):
+        """检查更新，silent=True 时只在有新版本时提示"""
+        event_bus.checkUpdateStateChanged.emit(True)
+        self._versionThread = VersionCheckThread(self.versionManager, self)
+        self._versionThread.finished.connect(
+            lambda hasNew, ver: self._onVersionChecked(hasNew, ver, silent)
+        )
+        self._versionThread.start()
+
+    def _onVersionChecked(self, hasNewVersion, latestVersion, silent):
+        event_bus.checkUpdateStateChanged.emit(False)
+        if hasNewVersion:
             self.showMessageBox(
                 self.globalText.NewVersionDetected,
                 self.globalText.NewVersion
-                + f" {self.versionManager.lastestVersion} "
+                + f" {latestVersion} "
                 + self.globalText.ADYWTDI,
                 True,
                 lambda: QDesktopServices.openUrl(QUrl(RELEASE_URL)),
             )
-        else:
+        elif not silent:
             self.showMessageBox(
                 self.globalText.NoNewVersion,
                 self.globalText.FKWIUTD,
@@ -186,23 +239,36 @@ class MainWindow(TopFluentWindow):
     def onError(self, message: str):
         """系统错误消息"""
 
+    def _onTrayMessage(self, title: str, message: str, msg_type: str):
+        """显示系统托盘消息"""
+        icon = (
+            QSystemTrayIcon.MessageIcon.Warning
+            if msg_type == "warning"
+            else QSystemTrayIcon.MessageIcon.Information
+        )
+        self.systemTrayIcon.showMessage(title, message, icon)
+
     def onSystemTrayMessageClicked(self):
         """系统托盘消息点击"""
         self.onMessage("show")
 
     def onSystemTrayActivated(self, reason: QSystemTrayIcon.ActivationReason):
         """系统托盘点击事件"""
-        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.onMessage("show")
 
     def closeEvent(self, event):
-        event.ignore()
-        self.hide()
-        self.systemTrayIcon.showMessage(
-            "Easy-FFmpeg",
-            "程序已最小化到系统托盘",
-            QIcon(":/app/images/logo.png"),
-        )
+        if cfg.get(cfg.closeDirectly):
+            event.accept()
+            self.onExit()
+        else:
+            event.ignore()
+            self.hide()
+            self.systemTrayIcon.showMessage(
+                "Easy-FFmpeg",
+                "程序已最小化到系统托盘",
+                QIcon(":/app/images/logo.png"),
+            )
 
     def onExit(self):
         """exit main window"""

@@ -9,6 +9,7 @@ from libs.qfluentwidgets_pro import (
     CaptionLabel,
     CardWidget,
     CheckBox,
+    FilledToolButton,
     FluentIcon,
     IconWidget,
     ImageLabel,
@@ -141,7 +142,7 @@ class FFmpegTaskCard(TaskCardBase):
         self.finishTimeLabel = CaptionLabel("2016-02-16 20:16:20")
 
         self.openFolderButton = ToolButton(FluentIcon.FOLDER)
-        self.deleteButton = ToolButton(FluentIcon.DELETE)
+        self.deleteButton = FilledToolButton(FluentIcon.DELETE)
 
         self._initWidget()
 
@@ -171,6 +172,7 @@ class FFmpegTaskCard(TaskCardBase):
         self.logButton.setToolTip("查看日志")
         self.logButton.setToolTipDuration(3000)
         self.logButton.installEventFilter(ToolTipFilter(self.logButton))
+        self.deleteButton.setColorScheme("error")
         self.deleteButton.setToolTip("移除任务")
         self.deleteButton.setToolTipDuration(3000)
         self.deleteButton.installEventFilter(ToolTipFilter(self.deleteButton))

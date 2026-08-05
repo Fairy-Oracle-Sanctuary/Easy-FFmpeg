@@ -51,10 +51,11 @@ class Text(QObject):
         self.ADAUPP = self.tr("自动检测并更新程序路径")
         self.About = self.tr("关于")
         self.CheckForUpdates = self.tr("检查更新")
+        self.Checking = self.tr("检查中...")
         self.Copyleft = self.tr("Copyleft")
         self.CurrentVersion = self.tr("当前版本")
         self.SelectFile = self.tr("选择文件")
-        self.Download = self.tr("下载")
+        self.Rely = self.tr("依赖")
         self.Detect = self.tr("检测")
         self.UpdateSuccessful = self.tr("更新成功")
         self.STEAR = self.tr("配置在重启软件后生效")
@@ -69,3 +70,15 @@ class Text(QObject):
         self.NoNewVersion = self.tr("没有新版本")
         self.FKWIUTD = self.tr("Easy FFmpeg 已是最新版本")
         self.SelectFfmpegFile = self.tr("选择ffmpeg文件")
+
+        # advance interface
+        self.FilterConfigHint = self.tr(
+            "勾选需要启用的参数块，未勾选的将不会加入 FFmpeg 命令"
+        )
+        self.FilterEncoder = self.tr("编码器")
+        self.FilterQuality = self.tr("质量控制")
+        self.FilterPreset = self.tr("编码速度")
+        self.FilterResolution = self.tr("分辨率")
+        self.FilterFrameRate = self.tr("帧率")
+        self.FilterAudio = self.tr("音频")
+        self.FilterExtra = self.tr("进阶设置")

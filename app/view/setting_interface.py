@@ -27,7 +27,7 @@ from libs.qfluentwidgets_pro import FluentIcon as FIF
 from libs.qfluentwidgets_pro import SettingCardGroup as CardGroup
 from libs.qfluentwidgets_pro.qframelesswindow.utils import getSystemAccentColor
 
-from ..common.config import cfg, get_default_exe_path
+from ..common.config import cfg, get_default_exe_path, isWin11
 from ..common.event_bus import event_bus
 from ..common.icon import Logo
 from ..common.setting import COPYLEFT, TEAM, VERSION, YEAR
@@ -82,6 +82,13 @@ class SettingInterface(ScrollArea):
         self.personalGroup = SettingCardGroup(
             self.globalText.Personalization, self.scrollWidget
         )
+        self.micaCard = SwitchSettingCard(
+            FIF.TRANSPARENT,
+            "云母效果",
+            "窗口和表面显示半透明",
+            cfg.micaEnabled,
+            self.personalGroup,
+        )
         self.themeCard = ComboBoxSettingCard(
             cfg.themeMode,
             FIF.BRUSH,
@@ -134,7 +141,7 @@ class SettingInterface(ScrollArea):
         )
 
         # exe
-        self.exeGroup = SettingCardGroup(self.globalText.Download, self.scrollWidget)
+        self.exeGroup = SettingCardGroup(self.globalText.Rely, self.scrollWidget)
         self.ffmpegPathCard = PushSettingCard(
             self.globalText.SelectFile,
             Logo.FFMPEG,
@@ -160,9 +167,16 @@ class SettingInterface(ScrollArea):
             + VERSION,
             self.aboutGroup,
         )
-        self.__initWidget()
+        self.updateOnStartUpCard = SwitchSettingCard(
+            FIF.UPDATE,
+            "在软件启动时检查更新",
+            "新版本更稳定且具有更多功能(推荐开启)",
+            configItem=cfg.checkUpdateAtStartUp,
+            parent=self.aboutGroup,
+        )
+        self._initWidget()
 
-    def __initWidget(self):
+    def _initWidget(self):
         self.resize(1000, 800)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setViewportMargins(0, 90, 0, 20)
@@ -174,13 +188,16 @@ class SettingInterface(ScrollArea):
         setFont(self.settingLabel, 23, QFont.Weight.DemiBold)
         self.enableTransparentBackground()
 
+        self.micaCard.setEnabled(isWin11())
+
         # initialize layout
-        self.__initLayout()
+        self._initLayout()
         self._connectSignalToSlot()
 
-    def __initLayout(self):
+    def _initLayout(self):
         self.settingLabel.move(36, 40)
 
+        self.personalGroup.addSettingCard(self.micaCard)
         self.personalGroup.addSettingCard(self.themeCard)
         self.personalGroup.addSettingCard(self.zoomCard)
         self.personalGroup.addSettingCard(self.languageCard)
@@ -189,6 +206,7 @@ class SettingInterface(ScrollArea):
 
         self.exeGroup.addSettingCard(self.ffmpegPathCard)
         self.exeGroup.addSettingCard(self.detectionCard)
+        self.aboutGroup.addSettingCard(self.updateOnStartUpCard)
 
         self.aboutGroup.addSettingCard(self.aboutCard)
 
@@ -327,6 +345,7 @@ class SettingInterface(ScrollArea):
         cfg.appRestartSig.connect(self._showRestartTooltip)
 
         # 个性化
+        self.micaCard.checkedChanged.connect(event_bus.micaEnableChanged)
         cfg.themeChanged.connect(setTheme)
         cfg.accentColor.valueChanged.connect(self._onAccentColorChanged)
 
@@ -335,3 +354,13 @@ class SettingInterface(ScrollArea):
 
         # 检查更新
         self.aboutCard.clicked.connect(event_bus.checkUpdateSig)
+        event_bus.checkUpdateStateChanged.connect(
+            lambda busy: (
+                self.aboutCard.button.setEnabled(not busy),
+                self.aboutCard.button.setText(
+                    self.globalText.Checking
+                    if busy
+                    else self.globalText.CheckForUpdates
+                ),
+            )
+        )

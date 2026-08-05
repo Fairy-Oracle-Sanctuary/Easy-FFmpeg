@@ -1,8 +1,6 @@
 # from ..common.signal_bus import signalBus
 # from ..common.icon import Logo
 
-from pathlib import Path
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
@@ -12,6 +10,7 @@ from ..common.config import cfg
 from ..common.event_bus import event_bus
 from ..common.setting import AUDIO_CONTAINERS, VIDEO_CONTAINERS
 from ..common.text import Text
+from ..common.utils import classifyMediaPaths
 
 
 class HomeInterface(ScrollArea):
@@ -59,42 +58,6 @@ class HomeInterface(ScrollArea):
         self.Drop.draggedChange.connect(self.extractPaths)
 
     def extractPaths(self, paths, recursive=None):
-        """
-        遍历用户选择的文件和文件夹
-        """
-        # print(paths)
-        recursive = cfg.get(cfg.homeRecursive)
-        video_set = set()
-        audio_set = set()
-
-        for path_str in paths:
-            path = Path(path_str)
-
-            if not path.exists():
-                continue
-
-            if path.is_file() and path.suffix.lower() in VIDEO_CONTAINERS:
-                video_set.add(path)
-            elif path.is_file() and path.suffix.lower() in AUDIO_CONTAINERS:
-                audio_set.add(path)
-            elif path.is_dir():
-                # 遍历文件夹
-                if recursive:
-                    # 递归遍历所有子文件夹
-                    for item in path.rglob("*"):
-                        if item.is_file() and item.suffix.lower() in VIDEO_CONTAINERS:
-                            video_set.add(item)
-                        elif item.is_file() and item.suffix.lower() in AUDIO_CONTAINERS:
-                            audio_set.add(item)
-                else:
-                    # 只遍历当前文件夹下的文件
-                    for item in path.iterdir():
-                        if item.is_file() and item.suffix.lower() in VIDEO_CONTAINERS:
-                            video_set.add(item)
-                        elif item.is_file() and item.suffix.lower() in AUDIO_CONTAINERS:
-                            audio_set.add(item)
-
-        # print(video_set)
-        # print(audio_set)
-        # 发送信号
+        """遍历用户选择的文件和文件夹"""
+        video_set, audio_set = classifyMediaPaths(paths, cfg.get(cfg.homeRecursive))
         event_bus.addTaskSig.emit(video_set, audio_set)

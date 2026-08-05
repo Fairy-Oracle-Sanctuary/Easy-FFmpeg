@@ -96,3 +96,10 @@ class Logger:
         if self.__consoleHandler in self.__logger.handlers:
             self.__logger.removeHandler(self.__consoleHandler)
             self.__consoleHandler.close()
+
+
+def closeLogger(name: str):
+    """关闭指定名称的 logger 并从缓存移除，释放文件句柄"""
+    logger = _loggers.pop(name, None)
+    if logger:
+        logger.close()

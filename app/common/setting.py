@@ -13,6 +13,8 @@ else:
 
 RELEASE_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases"
 GITHUB_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
+OFFICIAL_WEBSITE = ""
+FFMPEG_WEBSITE = "https://ffmpeg.org/"
 
 CONFIG_FOLDER = Path("AppData").absolute()
 
