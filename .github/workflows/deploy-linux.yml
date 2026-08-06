@@ -1,0 +1,60 @@
+name: Deploy Linux
+
+# 仅当 push 的提交消息包含 [deploy linux] 时才打包
+# 例：git commit -m "feat: 新增功能 [deploy linux]"
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    # 判断最新一条提交消息是否含 [deploy linux]
+    if: contains(github.event.head_commit.message, '[deploy linux]')
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf binutils build-essential python3-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build
+        run: python3 deploy.py
+
+      - name: Package
+        run: |
+          cd dist
+          tar -czf Easy-FFmpeg-${{ matrix.arch }}.tar.gz Easy-FFmpeg.dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Easy-FFmpeg-${{ matrix.arch }}
+          path: dist/Easy-FFmpeg-${{ matrix.arch }}.tar.gz
+          retention-days: 30
