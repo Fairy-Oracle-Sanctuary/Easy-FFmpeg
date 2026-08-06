@@ -1,7 +1,30 @@
 import os
+import shutil
 import sys
 
 from app.common.setting import VERSION
+
+
+def _check_linux_deps():
+    """检查 Linux 打包所需系统依赖（Nuitka standalone 模式硬依赖）"""
+    required = {
+        "patchelf": "apt install patchelf",
+        "readelf": "apt install binutils",
+        "gcc": "apt install build-essential",
+    }
+    missing = []
+    for tool, hint in required.items():
+        if shutil.which(tool) is None:
+            missing.append(f"  {tool}  →  {hint}")
+    if missing:
+        print("缺少打包所需系统依赖：")
+        print("\n".join(missing))
+        print("\n请先安装后重试。")
+        sys.exit(1)
+
+
+if sys.platform == "linux":
+    _check_linux_deps()
 
 if sys.platform == "win32":
     args = [
@@ -66,8 +89,40 @@ elif sys.platform == "darwin":
     ]
 else:
     args = [
-        "pyinstaller",
-        "-w",
+        sys.executable,
+        "-m",
+        "nuitka",
+        "--standalone",
+        "--plugin-enable=pyside6",
+        "--include-qt-plugins=sensible",
+        "--assume-yes-for-downloads",
+        "--show-memory",
+        "--show-progress",
+        "--linux-icon=app/resource/images/logo.icns",
+        f"--file-version={VERSION}",
+        f"--product-version={VERSION}",
+        "--file-description=Easy-FFmpeg",
+        # 排除未使用的重型库，减小打包体积
+        "--nofollow-import-to=numpy",
+        "--nofollow-import-to=scipy",
+        "--nofollow-import-to=PIL",
+        "--nofollow-import-to=colorthief",
+        "--nofollow-import-to=PySide6.QtWebChannel",
+        "--nofollow-import-to=PySide6.QtWebEngineCore",
+        "--nofollow-import-to=PySide6.QtWebEngineWidgets",
+        "--nofollow-import-to=PySide6.QtPositioning",
+        "--nofollow-import-to=PySide6.QtQml",
+        "--nofollow-import-to=PySide6.QtQmlModels",
+        "--nofollow-import-to=PySide6.QtQuick",
+        "--nofollow-import-to=PySide6.QtQuickWidgets",
+        "--nofollow-import-to=PySide6.QtPrintSupport",
+        "--nofollow-import-to=PySide6.QtOpenGL",
+        "--nofollow-import-to=PySide6.QtPdf",
+        # 链接期优化，显著减小体积
+        "--lto=yes",
+        # 去掉未使用的 Qt 翻译文件
+        "--noinclude-qt-translations",
+        "--output-dir=dist",
         "Easy-FFmpeg.py",
     ]
 
