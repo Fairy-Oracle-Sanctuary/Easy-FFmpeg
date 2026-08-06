@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtWidgets import QApplication, QSystemTrayIcon
+from PySide6.QtWidgets import QApplication, QFileDialog, QSystemTrayIcon
 
 from app.common.event_bus import event_bus
 from app.common.setting import RELEASE_URL
@@ -22,15 +22,22 @@ from libs.qfluentwidgets_pro import (
     Theme,
     TopFluentWindow,
     TopNavigationItemPosition,
+    TransparentToolButton,
     isDarkTheme,
     qconfig,
     toggleTheme,
 )
-from libs.qfluentwidgets_pro.components.widgets.button import TransparentToolButton
 
 from ..common.config import cfg
-from ..common.setting import FEEDBACK_URL
+from ..common.setting import (
+    AUDIO_CONTAINERS,
+    FEEDBACK_URL,
+    FFMPEG_WEBSITE,
+    GITHUB_URL,
+    VIDEO_CONTAINERS,
+)
 from ..common.utils import openUrl
+from ..components.menu_bar import MenuBar
 from ..components.system_tray_icon import SystemTrayIcon
 from ..service.version_service import VersionCheckThread
 from ..view.advance_interface import AdvanceInterface
@@ -61,6 +68,8 @@ class MainWindow(TopFluentWindow):
         self._initNavigation()
 
         self._connectSignalToSlot()
+
+        self._initMenuBar()
 
         self._initThemeButton()
 
@@ -137,8 +146,29 @@ class MainWindow(TopFluentWindow):
         self.systemTrayIcon.activated.connect(self.onSystemTrayActivated)
         qconfig.themeChanged.connect(self._updateThemeButtonIcon)
 
+    def _initMenuBar(self):
+        """初始化 macOS 原生菜单栏"""
+        if sys.platform != "darwin":
+            return
+
+        self.menuBar = MenuBar(self)
+        self.menuBar.openFileAct.triggered.connect(self.openFile)
+        self.menuBar.closeWindowAct.triggered.connect(self.close)
+        self.menuBar.settingsAct.triggered.connect(
+            lambda: self.switchTo(self.settingInterface)
+        )
+        self.menuBar.checkUpdateAct.triggered.connect(
+            lambda: self.checkUpdate(silent=False)
+        )
+        self.menuBar.githubAct.triggered.connect(lambda: openUrl(GITHUB_URL))
+        self.menuBar.feedbackAct.triggered.connect(lambda: openUrl(FEEDBACK_URL))
+        self.menuBar.ffmpegAct.triggered.connect(lambda: openUrl(FFMPEG_WEBSITE))
+
     def _initThemeButton(self):
         """在标题栏最小化按钮左侧添加主题切换按钮"""
+        if sys.platform == "darwin":
+            return
+
         self.themeButton = TransparentToolButton(self.titleBar)
         # 与最小化按钮尺寸保持一致
         self.themeButton.setFixedSize(self.titleBar.minBtn.size())
@@ -151,6 +181,9 @@ class MainWindow(TopFluentWindow):
 
     def _updateThemeButtonIcon(self, theme: Theme = None):
         """根据当前主题更新按钮图标"""
+        if sys.platform == "darwin":
+            return
+
         # 深色模式显示太阳（切到浅色），浅色模式显示月亮（切到深色）
         self.themeButton.setIcon(FIF.BRIGHTNESS if isDarkTheme() else FIF.QUIET_HOURS)
 
@@ -240,6 +273,15 @@ class MainWindow(TopFluentWindow):
         elif message:
             # 右键菜单传入的文件路径（换行分隔）
             self._handleFileArgs(message.split("\n"))
+
+    def openFile(self):
+        """打开文件对话框，选择媒体文件添加到任务"""
+
+        filters = "媒体文件 (*" + " *".join(VIDEO_CONTAINERS | AUDIO_CONTAINERS) + ")"
+        paths, _ = QFileDialog.getOpenFileNames(self, "打开文件", "", filters)
+        if not paths:
+            return
+        self._handleFileArgs(paths)
 
     def _handleFileArgs(self, paths: list):
         """处理右键菜单传入的文件路径"""

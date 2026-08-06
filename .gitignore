@@ -223,3 +223,4 @@ AppData/
 tools/
 test.py
 Output/
+.DS_Store
