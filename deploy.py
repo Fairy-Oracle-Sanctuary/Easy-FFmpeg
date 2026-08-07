@@ -200,3 +200,9 @@ if sys.platform == "win32":
     if os.path.isdir(dist_dir):
         cleanup_dist(dist_dir)
         copy_tools(dist_dir)
+
+"""
+[deploy win]
+[deploy linux]
+[deploy mac]
+"""
