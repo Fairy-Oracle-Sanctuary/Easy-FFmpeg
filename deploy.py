@@ -44,8 +44,6 @@ if sys.platform == "win32":
         f"--windows-file-version={VERSION}",
         f"--windows-product-version={VERSION}",
         '--windows-file-description="Easy-FFmpeg"',
-        # Bundle tools/ffmpeg.exe into Easy-FFmpeg.dist/tools/
-        "--include-data-dir=tools=tools",
         # Exclude unused heavy libraries to reduce package size
         "--nofollow-import-to=numpy",
         "--nofollow-import-to=scipy",
@@ -188,7 +186,17 @@ def cleanup_dist(dist_dir: str):
         print(f"  Total cleaned {removed / 1024 / 1024:.1f} MB")
 
 
+def copy_tools(dist_dir: str):
+    tools_dir = os.path.join(dist_dir, "tools")
+    os.makedirs(tools_dir, exist_ok=True)
+    src = os.path.join("tools", "ffmpeg.exe")
+    dst = os.path.join(tools_dir, "ffmpeg.exe")
+    shutil.copy2(src, dst)
+    print(f"  Copied {src} -> {dst} ({os.path.getsize(dst) / 1024 / 1024:.1f} MB)")
+
+
 if sys.platform == "win32":
     dist_dir = os.path.join("dist", "Easy-FFmpeg.dist")
     if os.path.isdir(dist_dir):
         cleanup_dist(dist_dir)
+        copy_tools(dist_dir)
