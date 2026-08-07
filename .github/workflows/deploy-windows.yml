@@ -34,6 +34,33 @@ jobs:
       - name: Install UPX and Inno Setup
         run: choco install upx innosetup -y --no-progress
 
+      - name: Download Inno Setup translations
+        # choco 装的官方 Inno Setup 只带部分翻译，缺简体中文等语言。
+        # 通过 GitHub API 拉取 issrc 仓库 Files/Languages 目录下的全部 .isl，
+        # 再把 Unofficial 子目录中不与根目录重名的 .isl 也拉下来，尽量支持更多语言。
+        # .iss 里的 EmitLanguagesSection 会自动包含它们
+        run: |
+          $langDir = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\Languages"
+          New-Item -ItemType Directory -Force -Path $langDir | Out-Null
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+          # 官方翻译（根目录）
+          $files = Invoke-RestMethod "https://api.github.com/repos/jrsoftware/issrc/contents/Files/Languages"
+          $islFiles = $files | Where-Object { $_.type -eq "file" -and $_.name -like "*.isl" }
+          foreach ($f in $islFiles) {
+            curl.exe -L -s -o (Join-Path $langDir $f.name) $f.download_url
+          }
+
+          # unofficial 翻译（Unofficial 子目录），跳过与根目录重名的文件
+          $unofficial = Invoke-RestMethod "https://api.github.com/repos/jrsoftware/issrc/contents/Files/Languages/Unofficial"
+          $existing = @($islFiles.name)
+          foreach ($f in $unofficial | Where-Object { $_.type -eq "file" -and $_.name -like "*.isl" }) {
+            if ($f.name -notin $existing) {
+              curl.exe -L -s -o (Join-Path $langDir $f.name) $f.download_url
+            }
+          }
+          Write-Host "Installed translations: $((Get-ChildItem $langDir -Filter *.isl).Count)"
+
       - name: Download ffmpeg (gyan.dev, Windows x86_64)
         run: |
           New-Item -ItemType Directory -Force -Path tools | Out-Null
