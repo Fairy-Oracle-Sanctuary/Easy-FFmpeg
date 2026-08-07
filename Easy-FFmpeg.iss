@@ -39,6 +39,7 @@ LicenseFile=LICENSE
 ; 取消注释以下行以在非管理员安装模式下运行 (仅为当前用户安装)。
 PrivilegesRequired=admin
 OutputBaseFilename=Easy-FFmpeg
+OutputDir=Output
 SolidCompression=yes
 WizardStyle=modern
 SetupIconFile=app\resource\images\logo.ico
