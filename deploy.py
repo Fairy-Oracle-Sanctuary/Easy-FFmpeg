@@ -44,6 +44,8 @@ if sys.platform == "win32":
         f"--windows-file-version={VERSION}",
         f"--windows-product-version={VERSION}",
         '--windows-file-description="Easy-FFmpeg"',
+        # 将 tools/ffmpeg.exe 打包进 Easy-FFmpeg.dist/tools/
+        "--include-data-dir=tools=tools",
         # 排除未使用的重型库，减小打包体积
         "--nofollow-import-to=numpy",
         "--nofollow-import-to=scipy",

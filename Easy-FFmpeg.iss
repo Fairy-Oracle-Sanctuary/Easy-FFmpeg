@@ -2,7 +2,9 @@
 ; 有关创建 Inno Setup 脚本文件的详细信息，请参阅帮助文档！
 
 #define MyAppName "Easy FFmpeg"
-#define MyAppVersion "1.0.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "Easy FFmpeg"
 #define MyAppURL "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
 #define MyAppExeName "Easy-FFmpeg.exe"
@@ -33,13 +35,13 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ChangesAssociations=yes
 DisableProgramGroupPage=yes
-LicenseFile=D:\CODE\Easy-FFmpeg-PySide6\LICENSE
+LicenseFile=LICENSE
 ; 取消注释以下行以在非管理员安装模式下运行 (仅为当前用户安装)。
 PrivilegesRequired=admin
 OutputBaseFilename=Easy-FFmpeg
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=D:\CODE\Easy-FFmpeg-PySide6\app\resource\images\logo.ico
+SetupIconFile=app\resource\images\logo.ico
 
 [Languages]
 Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"
@@ -53,8 +55,8 @@ Name: "addrightclick"; Description: "添加右键菜单""用 Easy FFmpeg 压制"
 ;Type: filesandordirs; Name: "{app}\*"
 
 [Files]
-Source: "C:\Users\ZHANGBaoHang\Desktop\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\CODE\Easy-FFmpeg-PySide6\dist\Easy-FFmpeg.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\Easy-FFmpeg.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; 注意：不要在任何共享系统文件上使用 "Flags: ignoreversion" 
 
 [Registry]

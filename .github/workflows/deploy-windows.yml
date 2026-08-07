@@ -1,0 +1,87 @@
+name: Deploy Windows
+
+# 仅当 push 的提交消息包含 [deploy win] 时才打包
+# 例：git commit -m "feat: 新增功能 [deploy win]"
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Build Windows x86_64 Installer
+    # 判断最新一条提交消息是否含 [deploy win]
+    if: contains(github.event.head_commit.message, '[deploy win]')
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install UPX and Inno Setup
+        run: choco install upx innosetup -y --no-progress
+
+      - name: Download ffmpeg (gyan.dev, Windows x86_64)
+        run: |
+          New-Item -ItemType Directory -Force -Path tools | Out-Null
+          # gyan.dev 是 ffmpeg.org 官方推荐的 Windows 构建源；release-essentials 为稳定版
+          # zip 结构为 ffmpeg-<ver>-essentials_build/bin/ffmpeg.exe
+          curl.exe -L -o ffmpeg.zip https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+          Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg-extracted -Force
+          $exe = Get-ChildItem -Path ffmpeg-extracted -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item $exe.FullName -Destination tools\ffmpeg.exe
+          Remove-Item -Path ffmpeg.zip, ffmpeg-extracted -Recurse -Force
+          & tools\ffmpeg.exe -version | Select-Object -First 1
+
+      - name: UPX compress ffmpeg.exe
+        # UPX 压缩 ffmpeg.exe，显著减小安装包体积（~80MB → ~30MB）
+        run: upx --lzma --best tools\ffmpeg.exe
+
+      - name: Build
+        # deploy.py 用 --include-data-dir=tools=tools 把（已压缩的）tools/ffmpeg.exe 打进 dist，
+        # 并在编译后自动调用 cleanup_dist 清理无用 Qt 插件
+        run: python deploy.py
+
+      - name: Prepare installer sources
+        # 主 exe 挪出 dist\Easy-FFmpeg.dist，避免被 .iss 的 dist\* 通配符重复打包
+        # .iss 中主 exe 单独从 dist\Easy-FFmpeg.exe 引用，其余依赖从 dist\Easy-FFmpeg.dist\* 引用
+        run: |
+          Move-Item -Path dist\Easy-FFmpeg.dist\Easy-FFmpeg.exe -Destination dist\Easy-FFmpeg.exe -Force
+          if (Test-Path dist\Easy-FFmpeg.dist\Easy-FFmpeg.exe) {
+            Write-Error "主 exe 未移出 dist"
+            exit 1
+          }
+
+      - name: Build installer (Inno Setup)
+        # 版本号从 app/common/setting.py 读取，通过 /D 覆盖 .iss 中的默认版本
+        # Chocolatey 装的 Inno Setup 默认不把 iscc 加进 PATH，用完整路径调用
+        run: |
+          $ver = python -c "from app.common.setting import VERSION; print(VERSION)"
+          Write-Host "Installer version: $ver"
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Error "未找到 ISCC.exe: $iscc"
+            exit 1
+          }
+          & $iscc "/DMyAppVersion=$ver" "Easy-FFmpeg.iss"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Easy-FFmpeg-win-x86_64-setup
+          # ISCC 输出到 .iss 所在目录（仓库根）：Easy-FFmpeg.exe 即安装包
+          path: Easy-FFmpeg.exe
+          retention-days: 30
