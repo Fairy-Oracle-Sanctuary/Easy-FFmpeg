@@ -55,6 +55,18 @@ jobs:
         # 并在编译后自动调用 cleanup_dist 清理无用 Qt 插件
         run: python deploy.py
 
+      - name: Verify bundled files
+        # 打包安装包前确认 ffmpeg 已进入 dist，缺失则立即失败并给出明确原因
+        run: |
+          if (-not (Test-Path dist\Easy-FFmpeg.dist\tools\ffmpeg.exe)) {
+            Write-Error "dist 中缺少 tools\ffmpeg.exe，--include-data-dir 未生效"
+            exit 1
+          }
+          $ff = Get-Item dist\Easy-FFmpeg.dist\tools\ffmpeg.exe
+          Write-Host "tools/ffmpeg.exe: $([math]::Round($ff.Length / 1MB, 1)) MB"
+          $total = (Get-ChildItem dist\Easy-FFmpeg.dist -Recurse -File | Measure-Object Length -Sum).Sum
+          Write-Host "dist total: $([math]::Round($total / 1MB, 1)) MB"
+
       - name: Prepare installer sources
         # 主 exe 挪出 dist\Easy-FFmpeg.dist，避免被 .iss 的 dist\* 通配符重复打包
         # .iss 中主 exe 单独从 dist\Easy-FFmpeg.exe 引用，其余依赖从 dist\Easy-FFmpeg.dist\* 引用

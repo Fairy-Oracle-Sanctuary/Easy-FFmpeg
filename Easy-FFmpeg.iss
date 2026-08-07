@@ -41,15 +41,26 @@ PrivilegesRequired=admin
 OutputBaseFilename=Easy-FFmpeg
 OutputDir=Output
 SolidCompression=yes
+; 根据系统语言自动选择安装界面语言，不弹语言选择框
+ShowLanguageDialog=no
 WizardStyle=modern
 SetupIconFile=app\resource\images\logo.ico
 
 [Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"
+; ShowLanguageDialog=no 时按系统语言自动选择；无匹配时用列表中第一项
+Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "addrightclick"; Description: "添加右键菜单""用 Easy FFmpeg 压制"""; GroupDescription: "{cm:AdditionalIcons}"
+Name: "addrightclick"; Description: "{cm:AddRightClick}"; GroupDescription: "{cm:AdditionalIcons}"
+
+[CustomMessages]
+; 默认（英文）
+AddRightClick=Add "Compress with Easy FFmpeg" to the right-click menu
+
+[CustomMessages]
+Name: "chinesesimp"; AddRightClick=添加右键菜单"用 Easy FFmpeg 压制"
 
 ;[InstallDelete]
 ; 安装前删除旧版本的所有文件和子目录
@@ -57,6 +68,8 @@ Name: "addrightclick"; Description: "添加右键菜单""用 Easy FFmpeg 压制"
 
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+; tools 显式单独声明：确保 ffmpeg 一定进入 {app}\tools（缺失会直接编译报错）
+Source: "dist\Easy-FFmpeg.dist\tools\*"; DestDir: "{app}\tools"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "dist\Easy-FFmpeg.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; 注意：不要在任何共享系统文件上使用 "Flags: ignoreversion" 
 
@@ -65,12 +78,12 @@ Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueTyp
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
-Root: HKCR; Subkey: "*\shell\EasyFFmpeg"; ValueType: string; ValueName: ""; ValueData: "用 Easy FFmpeg 压制"; Tasks: addrightclick; Flags: uninsdeletekey
+Root: HKCR; Subkey: "*\shell\EasyFFmpeg"; ValueType: string; ValueName: ""; ValueData: "{cm:AddRightClick}"; Tasks: addrightclick; Flags: uninsdeletekey
 Root: HKCR; Subkey: "*\shell\EasyFFmpeg"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExeName},0"; Tasks: addrightclick; Flags: uninsdeletevalue
 Root: HKCR; Subkey: "*\shell\EasyFFmpeg\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: addrightclick
 
 ; 文件夹右键菜单
-Root: HKCR; Subkey: "Directory\shell\EasyFFmpeg"; ValueType: string; ValueName: ""; ValueData: "用 Easy FFmpeg 压制"; Tasks: addrightclick; Flags: uninsdeletekey
+Root: HKCR; Subkey: "Directory\shell\EasyFFmpeg"; ValueType: string; ValueName: ""; ValueData: "{cm:AddRightClick}"; Tasks: addrightclick; Flags: uninsdeletekey
 Root: HKCR; Subkey: "Directory\shell\EasyFFmpeg"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExeName},0"; Tasks: addrightclick; Flags: uninsdeletevalue
 Root: HKCR; Subkey: "Directory\shell\EasyFFmpeg\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: addrightclick
 
