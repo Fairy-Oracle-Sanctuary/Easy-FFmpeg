@@ -76,14 +76,29 @@ class SettingInterface(ScrollArea):
         # setting label
         self.settingLabel = TitleLabel(self.globalText.Settings, self)
 
-        # 主页
-        self.homeGroup = SettingCardGroup("主页", self.scrollWidget)
+        # 软件
+        self.softwareGroup = SettingCardGroup("软件", self.scrollWidget)
         self.homeRecursiveCard = SwitchSettingCard(
             FIF.FOLDER,
             "递归遍历文件夹",
             "添加文件夹时是否递归遍历子文件夹中的媒体文件",
             cfg.homeRecursive,
-            self.homeGroup,
+            self.softwareGroup,
+        )
+        self.autoCleanLogsCard = SwitchSettingCard(
+            FIF.BROOM,
+            "自动清理过期日志",
+            "启动时自动删除超过保留期限的日志文件",
+            cfg.autoCleanLogs,
+            self.softwareGroup,
+        )
+        self.logRetentionCard = ComboBoxSettingCard(
+            cfg.logRetentionDays,
+            FIF.HISTORY,
+            "日志保留天数",
+            "超过该天数的日志文件将在启动时自动清理",
+            ["7 天", "14 天", "30 天", "90 天"],
+            self.softwareGroup,
         )
 
         # 个性化
@@ -205,7 +220,9 @@ class SettingInterface(ScrollArea):
     def _initLayout(self):
         self.settingLabel.move(36, 40)
 
-        self.homeGroup.addSettingCard(self.homeRecursiveCard)
+        self.softwareGroup.addSettingCard(self.homeRecursiveCard)
+        self.softwareGroup.addSettingCard(self.autoCleanLogsCard)
+        self.softwareGroup.addSettingCard(self.logRetentionCard)
 
         self.personalGroup.addSettingCard(self.micaCard)
         self.personalGroup.addSettingCard(self.themeCard)
@@ -216,6 +233,7 @@ class SettingInterface(ScrollArea):
 
         self.exeGroup.addSettingCard(self.ffmpegPathCard)
         self.exeGroup.addSettingCard(self.detectionCard)
+
         self.aboutGroup.addSettingCard(self.updateOnStartUpCard)
 
         self.aboutGroup.addSettingCard(self.aboutCard)
@@ -223,7 +241,7 @@ class SettingInterface(ScrollArea):
         # add setting card group to layout
         self.expandLayout.setSpacing(26)
         self.expandLayout.setContentsMargins(36, 10, 36, 0)
-        self.expandLayout.addWidget(self.homeGroup)
+        self.expandLayout.addWidget(self.softwareGroup)
         self.expandLayout.addWidget(self.personalGroup)
         self.expandLayout.addWidget(self.exeGroup)
         self.expandLayout.addWidget(self.aboutGroup)
@@ -357,3 +375,9 @@ class SettingInterface(ScrollArea):
                 ),
             )
         )
+
+        # 日志自动清理：关闭时禁用保留天数选项
+        self.autoCleanLogsCard.checkedChanged.connect(
+            lambda checked: self.logRetentionCard.setEnabled(checked)
+        )
+        self.logRetentionCard.setEnabled(cfg.get(cfg.autoCleanLogs))

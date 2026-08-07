@@ -9,6 +9,7 @@ from libs.qfluentwidgets_pro import (
     FluentIcon,
     HyperlinkLabel,
     ImageLabel,
+    LuminaPushButton,
     MessageBox,
     PrimaryPushButton,
     SimpleCardWidget,
@@ -19,6 +20,7 @@ from libs.qfluentwidgets_pro import (
 )
 
 from ..common.event_bus import event_bus
+from ..common.icon import Logo
 from ..common.logger import LOG_FOLDER
 from ..common.setting import (
     CONFIG_FILE,
@@ -54,13 +56,16 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
 
         self.versionWidget = StatisticsWidget("版本", f"v{VERSION}", self)
         self.updateTimeWidget = StatisticsWidget("更新时间", UPDATE_TIME, self)
+        self.logSizeWidget = StatisticsWidget(
+            "日志占用", self._formatLogSize(self._getLogSize()), self
+        )
 
         self.descriptionLabel = BodyLabel(
             "Easy FFmpeg 是一个基于 FFmpeg 的视频处理工具，用于批量处理视频文件，操作简单易用。",
             self,
         )
 
-        self.ffmpegButton = PrimaryPushButton(FluentIcon.BOOK_SHELF, "FFmpeg")
+        self.ffmpegButton = LuminaPushButton(Logo.FFMPEG, "FFmpeg")
 
         self.clearffmpegButton = TransparentToolButton(FluentIcon.DELETE, self)
         self.clearffmpegButton.setToolTip("清理日志文件")
@@ -137,6 +142,8 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         self.statisticsLayout.addWidget(self.versionWidget)
         self.statisticsLayout.addWidget(VerticalSeparator())
         self.statisticsLayout.addWidget(self.updateTimeWidget)
+        self.statisticsLayout.addWidget(VerticalSeparator())
+        self.statisticsLayout.addWidget(self.logSizeWidget)
         self.statisticsLayout.setAlignment(Qt.AlignLeft)
 
         # description label
@@ -173,11 +180,39 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
                 self.updateButton.setText(self.globalText.Checking if busy else "更新"),
             )
         )
+        # 任务失败或应用出错时会写入日志，刷新日志占用大小
+        event_bus.finishTaskSig.connect(
+            lambda _id, ok, _log: self._refreshLogSize() if not ok else None
+        )
+        event_bus.appErrorSig.connect(lambda _msg: self._refreshLogSize())
+
+    def _getLogSize(self) -> int:
+        """计算 LOG_FOLDER 下所有 .log 文件的总大小（字节）"""
+        if not LOG_FOLDER.exists():
+            return 0
+        return sum(f.stat().st_size for f in LOG_FOLDER.rglob("*.log") if f.is_file())
+
+    def _formatLogSize(self, size: int) -> str:
+        """将字节数格式化为人类可读的字符串（B/KB/MB/GB/TB）"""
+        if size < 1024:
+            return f"{size} B"
+        for unit in ["KB", "MB", "GB", "TB"]:
+            size /= 1024
+            if size < 1024:
+                return f"{size:.1f} {unit}"
+        return f"{size:.1f} TB"
+
+    def _refreshLogSize(self):
+        """重新计算并刷新日志占用大小显示"""
+        self.logSizeWidget.valueLabel.setText(self._formatLogSize(self._getLogSize()))
 
     def __onClearLogClicked(self):
         """清空所有日志文件"""
+        size_str = self._formatLogSize(self._getLogSize())
         w = MessageBox(
-            "清理日志", "确定要清空所有日志文件吗？此操作不可撤销。", self.window()
+            "清理日志",
+            f"确定要清空所有日志文件吗？当前占用 {size_str}，此操作不可撤销。",
+            self.window(),
         )
         if not w.exec():
             return
@@ -198,6 +233,9 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
 
         # 重建 application logger，恢复正常写入
         SingletonApplication.logger = Logger("application")
+
+        # 刷新日志占用大小显示
+        self._refreshLogSize()
 
         msg = f"已清理 {cleared} 个日志文件"
         if failed:

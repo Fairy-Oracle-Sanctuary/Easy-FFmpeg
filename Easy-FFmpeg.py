@@ -5,6 +5,7 @@ from PySide6.QtCore import QFile, QLocale, Qt, QTranslator
 
 from app.common.application import SingletonApplication
 from app.common.config import Language, cfg
+from app.common.logger import cleanOldLogs
 from app.resource import resource_rc  # noqa
 from app.view.main_window import MainWindow
 from libs.qfluentwidgets_pro import FluentTranslator
@@ -23,6 +24,10 @@ def main():
         from AppKit import NSApplication
 
         NSApplication.sharedApplication()
+
+    # 启动时自动清理过期日志
+    if cfg.get(cfg.autoCleanLogs):
+        cleanOldLogs(cfg.get(cfg.logRetentionDays))
 
     # 安装翻译器
     language = cfg.get(cfg.language)

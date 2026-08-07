@@ -134,6 +134,20 @@ class Config(QConfig):
         "Home", "Recursive", False, BoolValidator(), restart=False
     )
 
+    # 日志
+    # 启动时自动清理过期日志
+    autoCleanLogs = ConfigItem(
+        "Log", "AutoCleanLogs", True, BoolValidator(), restart=False
+    )
+    # 日志保留天数，超过该天数的 .log 文件将在启动时自动清理
+    logRetentionDays = OptionsConfigItem(
+        "Log",
+        "RetentionDays",
+        30,
+        OptionsValidator([7, 14, 30, 90]),
+        restart=False,
+    )
+
     # ffmpeg
     # 是否使用完全自定义的参数
     ffmpegIsUseCustomArgs = ConfigItem(
@@ -183,21 +197,24 @@ class Config(QConfig):
     ffmpegUseHardWareVideoCodec = ConfigItem(
         "FFmpeg", "UseHardWareVideoCodec", False, BoolValidator(), restart=False
     )
-    # 硬件编码器平台
+    # 硬件编码器平台（macOS 固定为 Apple，其他系统为 NVIDIA/Intel/AMD）
+    _is_macos = sys.platform == "darwin"
     ffmpegHardWareVideoCodecPlatform = OptionsConfigItem(
         "FFmpeg",
         "HardWareVideoCodecPlatform",
-        "NVIDIA",
-        OptionsValidator(["NVIDIA", "Intel", "AMD"]),
+        "Apple" if _is_macos else "NVIDIA",
+        OptionsValidator(["Apple"] if _is_macos else ["NVIDIA", "Intel", "AMD"]),
         restart=False,
     )
-    # 硬件编码器
+    # 硬件编码器（macOS 使用 VideoToolbox，其他系统使用 NVENC/QSV/AMF）
     ffmpegHardWareVideoCodec = OptionsConfigItem(
         "FFmpeg",
         "HardWareVideoCodec",
-        "h264_nvenc",
+        "h264_videotoolbox" if _is_macos else "h264_nvenc",
         OptionsValidator(
-            [
+            ["h264_videotoolbox", "hevc_videotoolbox", "av1_videotoolbox"]
+            if _is_macos
+            else [
                 "h264_nvenc",
                 "hevc_nvenc",
                 "av1_nvenc",
