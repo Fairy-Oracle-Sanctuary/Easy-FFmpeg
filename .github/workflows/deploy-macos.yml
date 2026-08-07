@@ -57,13 +57,23 @@ jobs:
             echo "未找到 .app 产物"
             exit 1
           fi
-          echo "Packaging $APP"
-          # tar.gz 保留可执行位与符号链接（.app 内 Qt 框架可能含符号链接）
-          tar -czf Easy-FFmpeg-macos-x86_64.tar.gz "$APP"
+          # 准备 DMG 暂存目录：放入 .app 并建立 /Applications 快捷方式（拖拽安装）
+          STAGING="dmg-staging"
+          mkdir -p "$STAGING"
+          cp -R "$APP" "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+          echo "Creating DMG from $APP"
+          # hdiutil 生成只读压缩 DMG（macOS 原生分发格式，保留符号链接与可执行位）
+          hdiutil create \
+            -volname "Easy FFmpeg" \
+            -srcfolder "$STAGING" \
+            -ov \
+            -format UDZO \
+            Easy-FFmpeg-macos-x86_64.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Easy-FFmpeg-macos-x86_64
-          path: dist/Easy-FFmpeg-macos-x86_64.tar.gz
+          path: dist/Easy-FFmpeg-macos-x86_64.dmg
           retention-days: 30
