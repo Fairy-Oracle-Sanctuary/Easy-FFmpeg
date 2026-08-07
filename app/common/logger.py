@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 import weakref
 
 from .setting import CONFIG_FOLDER
@@ -103,3 +104,24 @@ def closeLogger(name: str):
     logger = _loggers.pop(name, None)
     if logger:
         logger.close()
+
+
+def cleanOldLogs(retention_days: int) -> int:
+    """删除修改时间早于 retention_days 天前的 .log 文件，返回删除数量
+
+    正在写入的当前日志文件 mtime 较新，不会被误删。
+    """
+    if not LOG_FOLDER.exists() or retention_days <= 0:
+        return 0
+    threshold = time.time() - retention_days * 86400
+    count = 0
+    for f in LOG_FOLDER.rglob("*.log"):
+        if not f.is_file():
+            continue
+        try:
+            if f.stat().st_mtime < threshold:
+                f.unlink()
+                count += 1
+        except OSError:
+            pass
+    return count

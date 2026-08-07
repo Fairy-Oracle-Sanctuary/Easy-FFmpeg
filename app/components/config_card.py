@@ -1,3 +1,5 @@
+import sys
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import (
     QColor,
@@ -127,11 +129,16 @@ class AdvancedEncoderConfigCard(GroupHeaderCardWidget):
         self.hardWareVideoCodecPlatformComboBox = ComboBox()
         self.hardWareVideoCodecComboBox = ComboBox()
 
-        self.hardWareVideoCodecDict = {
-            "NVIDIA": ["h264_nvenc", "hevc_nvenc", "av1_nvenc"],
-            "Intel": ["h264_qsv", "hevc_qsv", "av1_qsv"],
-            "AMD": ["h264_amf", "hevc_amf", "av1_amf"],
-        }
+        if sys.platform == "darwin":
+            self.hardWareVideoCodecDict = {
+                "Apple": ["h264_videotoolbox", "hevc_videotoolbox", "av1_videotoolbox"],
+            }
+        else:
+            self.hardWareVideoCodecDict = {
+                "NVIDIA": ["h264_nvenc", "hevc_nvenc", "av1_nvenc"],
+                "Intel": ["h264_qsv", "hevc_qsv", "av1_qsv"],
+                "AMD": ["h264_amf", "hevc_amf", "av1_amf"],
+            }
 
         self._initWidgets()
 
@@ -185,7 +192,11 @@ class AdvancedEncoderConfigCard(GroupHeaderCardWidget):
         self.addGroup(
             icon=Logo.PLATFORM,
             title="硬件编码器平台",
-            content="选择显卡厂商对应的编码平台,NVIDIA为NVENC,Intel为QSV,AMD为AMF",
+            content=(
+                "使用Apple VideoToolbox框架进行硬件加速编码"
+                if sys.platform == "darwin"
+                else "选择显卡厂商对应的编码平台,NVIDIA为NVENC,Intel为QSV,AMD为AMF"
+            ),
             widget=self.hardWareVideoCodecPlatformComboBox,
             wordWrap=True,
         )
