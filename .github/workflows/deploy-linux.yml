@@ -70,12 +70,30 @@ jobs:
           exec /opt/Easy-FFmpeg/Easy-FFmpeg "$@"
           EOF
           chmod +x package/usr/bin/easy-ffmpeg
+          # Debian 规范：版权文件放 /usr/share/doc/<包名>/copyright，
+          # 软件中心据此显示许可证（缺失时会显示 unknown）
+          mkdir -p package/usr/share/doc/easy-ffmpeg
+          cp LICENSE package/usr/share/doc/easy-ffmpeg/copyright
+          # 应用菜单入口：.desktop 文件 + 图标（否则软件中心看不到应用，只能命令行启动）
+          mkdir -p package/usr/share/applications package/usr/share/pixmaps
+          cat > package/usr/share/applications/easy-ffmpeg.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Easy FFmpeg
+          Comment=Simple FFmpeg GUI / tool
+          Exec=easy-ffmpeg
+          Icon=easy-ffmpeg
+          Terminal=false
+          Type=Application
+          Categories=AudioVideo;Video;Audio;
+          StartupNotify=true
+          EOF
+          cp app/resource/images/logo.png package/usr/share/pixmaps/easy-ffmpeg.png
 
       - name: Package (deb + rpm)
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # 打 deb 包（声明依赖 ffmpeg，安装时自动拉取）
+          # 打 deb 包（声明依赖 ffmpeg，安装时自动拉取；--license 防止软件中心显示 unknown）
           fpm -s dir -t deb \
             -n easy-ffmpeg \
             -v "${VERSION}" \
@@ -83,6 +101,7 @@ jobs:
             --description "Easy FFmpeg - Simple FFmpeg GUI / tool" \
             --url "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" \
             --maintainer "Easy FFmpeg" \
+            --license "GPL-3.0" \
             --depends ffmpeg \
             --prefix / \
             -C package \
@@ -97,6 +116,7 @@ jobs:
             --description "Easy FFmpeg - Simple FFmpeg GUI / tool" \
             --url "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" \
             --maintainer "Easy FFmpeg" \
+            --license "GPL-3.0" \
             --depends ffmpeg \
             --prefix / \
             -C package \
