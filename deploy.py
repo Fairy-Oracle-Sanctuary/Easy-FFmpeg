@@ -6,7 +6,7 @@ from app.common.setting import VERSION
 
 
 def _check_linux_deps():
-    """检查 Linux 打包所需系统依赖（Nuitka standalone 模式硬依赖）"""
+    """Check Linux build dependencies (required by Nuitka standalone mode)"""
     required = {
         "patchelf": "apt install patchelf",
         "readelf": "apt install binutils",
@@ -15,11 +15,11 @@ def _check_linux_deps():
     missing = []
     for tool, hint in required.items():
         if shutil.which(tool) is None:
-            missing.append(f"  {tool}  →  {hint}")
+            missing.append(f"  {tool}  ->  {hint}")
     if missing:
-        print("缺少打包所需系统依赖：")
+        print("Missing build dependencies:")
         print("\n".join(missing))
-        print("\n请先安装后重试。")
+        print("\nInstall them first, then retry.")
         sys.exit(1)
 
 
@@ -44,12 +44,12 @@ if sys.platform == "win32":
         f"--windows-file-version={VERSION}",
         f"--windows-product-version={VERSION}",
         '--windows-file-description="Easy-FFmpeg"',
-        # 将 tools/ffmpeg.exe 打包进 Easy-FFmpeg.dist/tools/
+        # Bundle tools/ffmpeg.exe into Easy-FFmpeg.dist/tools/
         "--include-data-dir=tools=tools",
-        # 排除未使用的重型库，减小打包体积
+        # Exclude unused heavy libraries to reduce package size
         "--nofollow-import-to=numpy",
         "--nofollow-import-to=scipy",
-        # 排除 acrylic 模糊的可选依赖（numpy/scipy 缺失时本就走 fallback）
+        # Exclude optional acrylic-blur dependencies (falls back when numpy/scipy missing)
         "--nofollow-import-to=PIL",
         "--nofollow-import-to=colorthief",
         "--nofollow-import-to=PySide6.QtWebChannel",
@@ -64,9 +64,9 @@ if sys.platform == "win32":
         "--nofollow-import-to=PySide6.QtOpenGL",
         "--nofollow-import-to=PySide6.QtPdf",
         "--nofollow-import-to=pythoncom",
-        # 链接期优化，显著减小 exe 体积
+        # Link-time optimization to significantly reduce exe size
         "--lto=yes",
-        # 去掉未使用的 Qt 翻译文件
+        # Drop unused Qt translation files
         "--noinclude-qt-translations",
         "--output-dir=dist",
         "Easy-FFmpeg.py",
@@ -85,12 +85,12 @@ elif sys.platform == "darwin":
         "--show-progress",
         "--macos-app-icon=app/resource/images/logo.icns",
         "--macos-app-name=Easy-FFmpeg",
-        # 将 tools/ffmpeg 打包进 .app 的 Contents/MacOS/tools/
+        # Bundle tools/ffmpeg into .app's Contents/MacOS/tools/
         "--include-data-dir=tools=tools",
         f"--file-version={VERSION}",
         f"--product-version={VERSION}",
         "--file-description=Easy-FFmpeg",
-        # 排除未使用的重型库，减小打包体积
+        # Exclude unused heavy libraries to reduce package size
         "--nofollow-import-to=numpy",
         "--nofollow-import-to=scipy",
         "--nofollow-import-to=PIL",
@@ -106,9 +106,9 @@ elif sys.platform == "darwin":
         "--nofollow-import-to=PySide6.QtPrintSupport",
         "--nofollow-import-to=PySide6.QtOpenGL",
         "--nofollow-import-to=PySide6.QtPdf",
-        # 链接期优化，显著减小体积
+        # Link-time optimization to significantly reduce binary size
         "--lto=yes",
-        # 去掉未使用的 Qt 翻译文件
+        # Drop unused Qt translation files
         "--noinclude-qt-translations",
         "--output-dir=dist",
         "Easy-FFmpeg.py",
@@ -128,7 +128,7 @@ else:
         f"--file-version={VERSION}",
         f"--product-version={VERSION}",
         "--file-description=Easy-FFmpeg",
-        # 排除未使用的重型库，减小打包体积
+        # Exclude unused heavy libraries to reduce package size
         "--nofollow-import-to=numpy",
         "--nofollow-import-to=scipy",
         "--nofollow-import-to=PIL",
@@ -144,9 +144,9 @@ else:
         "--nofollow-import-to=PySide6.QtPrintSupport",
         "--nofollow-import-to=PySide6.QtOpenGL",
         "--nofollow-import-to=PySide6.QtPdf",
-        # 链接期优化，显著减小体积
+        # Link-time optimization to significantly reduce binary size
         "--lto=yes",
-        # 去掉未使用的 Qt 翻译文件
+        # Drop unused Qt translation files
         "--noinclude-qt-translations",
         "--output-dir=dist",
         "Easy-FFmpeg.py",
@@ -157,15 +157,15 @@ os.system(" ".join(args))
 
 
 def cleanup_dist(dist_dir: str):
-    """编译后清理 dist 中多余的 Qt 插件/dll（Nuitka 插件集无法精确到单个插件）"""
+    """Remove unneeded Qt plugins/dlls from dist (Nuitka plugin set is not precise)"""
     removable = [
-        # QtPdf 误收集（正常已被 --nofollow-import-to 拦截，双保险）
+        # QtPdf collected by mistake (normally blocked by --nofollow-import-to; belt and braces)
         "qt6pdf.dll",
         "qt6pdfwidgets.dll",
         "pythoncom39.dll",
-        # platforms：qwindows 已够用，qdirect2d 是多余的软件渲染后端
+        # platforms: qwindows is enough; qdirect2d is a redundant software-rendering backend
         r"PySide6\qt-plugins\platforms\qdirect2d.dll",
-        # imageformats：应用只用 png/jpg/ico/svg，其余格式解码插件全部多余
+        # imageformats: app only uses png/jpg/ico/svg, the rest are redundant decoders
         r"PySide6\qt-plugins\imageformats\qwebp.dll",
         r"PySide6\qt-plugins\imageformats\qtiff.dll",
         r"PySide6\qt-plugins\imageformats\qicns.dll",
@@ -173,7 +173,7 @@ def cleanup_dist(dist_dir: str):
         r"PySide6\qt-plugins\imageformats\qwbmp.dll",
         r"PySide6\qt-plugins\imageformats\qpdf.dll",
         r"PySide6\qt-plugins\imageformats\qgif.dll",
-        # tls：保留 openssl + schannel 后端即可，certonly 冗余
+        # tls: keep openssl + schannel backends; certonly is redundant
         r"PySide6\qt-plugins\tls\qcertonlybackend.dll",
     ]
     removed = 0
@@ -183,9 +183,9 @@ def cleanup_dist(dist_dir: str):
             size = os.path.getsize(fp)
             os.remove(fp)
             removed += size
-            print(f"  清理 {rel} ({size / 1024:.0f} KB)")
+            print(f"  Removed {rel} ({size / 1024:.0f} KB)")
     if removed:
-        print(f"  共清理 {removed / 1024 / 1024:.1f} MB")
+        print(f"  Total cleaned {removed / 1024 / 1024:.1f} MB")
 
 
 if sys.platform == "win32":
