@@ -47,9 +47,7 @@ WizardStyle=modern
 SetupIconFile=app\resource\images\logo.ico
 
 [Languages]
-; ShowLanguageDialog=no 时按系统语言自动选择；无匹配时用列表中第一项
-Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+#expr EmitLanguagesSection
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
