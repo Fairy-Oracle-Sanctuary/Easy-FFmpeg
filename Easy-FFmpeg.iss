@@ -57,12 +57,43 @@ Name: "addrightclick"; Description: "{cm:AddRightClick}"; GroupDescription: "{cm
 ; 默认（英文）
 AddRightClick=Add "Compress with Easy FFmpeg" to the right-click menu
 
-[CustomMessages]
-Name: "chinesesimp"; AddRightClick=添加右键菜单"用 Easy FFmpeg 压制"
+; 官方支持语言翻译
+arabic.AddRightClick=إضافة "ضغط باستخدام Easy FFmpeg" إلى قائمة النقر بزر الماوس الأيمن
+armenian.AddRightClick=Ավելացնել «Սեղմել Easy FFmpeg-ով» աջ կտտոցի ընտրացանկում
+brazilianportuguese.AddRightClick=Adicionar "Comprimir com Easy FFmpeg" ao menu de contexto
+bulgarian.AddRightClick=Добавяне на „Компресирай с Easy FFmpeg“ в контекстното меню
+catalan.AddRightClick=Afegeix "Comprimeix amb Easy FFmpeg" al menú contextual
+chinesesimplified.AddRightClick=添加右键菜单“用 Easy FFmpeg 压制”
+chinesetraditional.AddRightClick=新增右鍵選單「用 Easy FFmpeg 轉檔」
+corsican.AddRightClick=Aghjunghje "Cumpressà cù Easy FFmpeg" à u menù di u cliccà dirittu
+czech.AddRightClick=Přidat „Komprimovat pomocí Easy FFmpeg“ do místní nabídky
+danish.AddRightClick=Tilføj "Komprimer med Easy FFmpeg" til højreklikmenuen
+dutch.AddRightClick=Voeg "Comprimeren met Easy FFmpeg" toe aan het contextmenu
+finnish.AddRightClick=Lisää "Pakkaa Easy FFmpegillä" hiiren kakkospainikkeen valikkoon
+french.AddRightClick=Ajouter « Compresser avec Easy FFmpeg » au menu contextuel
+german.AddRightClick="Mit Easy FFmpeg komprimieren" zum Rechtsklickmenü hinzufügen
+hebrew.AddRightClick=הוסף "דחוס עם Easy FFmpeg" לתפריט לחיצה ימנית
+hungarian.AddRightClick=„Tömörítés Easy FFmpeg-gel” hozzáadása a jobb gombos menühöz
+italian.AddRightClick=Aggiungi "Comprimi con Easy FFmpeg" al menu contestuale
+japanese.AddRightClick=右クリックメニューに「Easy FFmpeg で圧縮」を追加
+korean.AddRightClick=마우스 오른쪽 버튼 메뉴에 "Easy FFmpeg로 압축" 추가
+lithuanian.AddRightClick=Pridėti „Suspausti su Easy FFmpeg“ į dešiniojo pelės mygtuko meniu
+norwegian.AddRightClick=Legg til «Komprimer med Easy FFmpeg» i høyreklikkmenyen
+polish.AddRightClick=Dodaj „Kompresuj za pomocą Easy FFmpeg” do menu kontekstowego
+portuguese.AddRightClick=Adicionar "Comprimir com Easy FFmpeg" ao menu de contexto
+russian.AddRightClick=Добавить «Сжать с помощью Easy FFmpeg» в контекстное меню
+slovak.AddRightClick=Pridať „Komprimovať pomocou Easy FFmpeg“ do kontextovej ponuky
+slovenian.AddRightClick=Dodaj »Stisni z Easy FFmpeg« v kontekstni meni
+spanish.AddRightClick=Añadir "Comprimir con Easy FFmpeg" al menú contextual
+swedish.AddRightClick=Lägg till "Komprimera med Easy FFmpeg" i högerklicksmenyn
+tamil.AddRightClick=வலது கிளிக் மெனுவில் "Easy FFmpeg மூலம் சுருக்கு" சேர்
+thai.AddRightClick=เพิ่ม "บีบอัดด้วย Easy FFmpeg" ไปยังเมนูคลิกขวา
+turkish.AddRightClick=Sağ tıklama menüsüne "Easy FFmpeg ile Sıkıştır" ekle
+ukrainian.AddRightClick=Додати «Стиснути за допомогою Easy FFmpeg» до контекстного меню
 
-;[InstallDelete]
+[InstallDelete]
 ; 安装前删除旧版本的所有文件和子目录
-;Type: filesandordirs; Name: "{app}\*"
+Type: filesandordirs; Name: "{app}\*"
 
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
