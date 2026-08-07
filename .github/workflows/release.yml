@@ -1,0 +1,337 @@
+name: Release
+
+# 打 tag 时发布 GitHub Release（tag 名即版本号，如 v1.0.0）
+# 例：git tag v1.0.0 && git push origin v1.0.0
+# 发布说明从仓库根 RELEASE_NOTES.md 读取，缺失时使用自动生成内容
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install UPX and Inno Setup
+        run: choco install upx innosetup -y --no-progress
+
+      - name: Download Inno Setup translations
+        # choco 装的官方 Inno Setup 只带部分翻译，缺简体中文等语言。
+        # 通过 GitHub API 拉取 issrc 仓库 Files/Languages 目录下的全部 .isl，
+        # 再把 Unofficial 子目录中不与根目录重名的 .isl 也拉下来，尽量支持更多语言。
+        # .iss 里的 EmitLanguagesSection 会自动包含它们
+        run: |
+          $langDir = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\Languages"
+          New-Item -ItemType Directory -Force -Path $langDir | Out-Null
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+          # 官方翻译（根目录）
+          $files = Invoke-RestMethod "https://api.github.com/repos/jrsoftware/issrc/contents/Files/Languages"
+          $islFiles = $files | Where-Object { $_.type -eq "file" -and $_.name -like "*.isl" }
+          foreach ($f in $islFiles) {
+            curl.exe -L -s -o (Join-Path $langDir $f.name) $f.download_url
+          }
+
+          # unofficial 翻译（Unofficial 子目录），跳过与根目录重名的文件
+          $unofficial = Invoke-RestMethod "https://api.github.com/repos/jrsoftware/issrc/contents/Files/Languages/Unofficial"
+          $existing = @($islFiles.name)
+          foreach ($f in $unofficial | Where-Object { $_.type -eq "file" -and $_.name -like "*.isl" }) {
+            if ($f.name -notin $existing) {
+              curl.exe -L -s -o (Join-Path $langDir $f.name) $f.download_url
+            }
+          }
+          Write-Host "Installed translations: $((Get-ChildItem $langDir -Filter *.isl).Count)"
+
+      - name: Download ffmpeg (gyan.dev, Windows x86_64)
+        run: |
+          New-Item -ItemType Directory -Force -Path tools | Out-Null
+          # gyan.dev 是 ffmpeg.org 官方推荐的 Windows 构建源；release-essentials 为稳定版
+          # zip 结构为 ffmpeg-<ver>-essentials_build/bin/ffmpeg.exe
+          curl.exe -L -o ffmpeg.zip https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+          Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg-extracted -Force
+          $exe = Get-ChildItem -Path ffmpeg-extracted -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item $exe.FullName -Destination tools\ffmpeg.exe
+          Remove-Item -Path ffmpeg.zip, ffmpeg-extracted -Recurse -Force
+          & tools\ffmpeg.exe -version | Select-Object -First 1
+
+      - name: UPX compress ffmpeg.exe
+        run: upx --lzma --best tools\ffmpeg.exe
+
+      - name: Build
+        run: python deploy.py
+
+      - name: Verify bundled files
+        run: |
+          if (-not (Test-Path dist\Easy-FFmpeg.dist\tools\ffmpeg.exe)) {
+            Write-Error "dist 中缺少 tools\ffmpeg.exe，--include-data-dir 未生效"
+            exit 1
+          }
+          $ff = Get-Item dist\Easy-FFmpeg.dist\tools\ffmpeg.exe
+          Write-Host "tools/ffmpeg.exe: $([math]::Round($ff.Length / 1MB, 1)) MB"
+          $total = (Get-ChildItem dist\Easy-FFmpeg.dist -Recurse -File | Measure-Object Length -Sum).Sum
+          Write-Host "dist total: $([math]::Round($total / 1MB, 1)) MB"
+
+      - name: Prepare installer sources
+        # 主 exe 挪出 dist\Easy-FFmpeg.dist，避免被 .iss 的 dist\* 通配符重复打包
+        run: |
+          Move-Item -Path dist\Easy-FFmpeg.dist\Easy-FFmpeg.exe -Destination dist\Easy-FFmpeg.exe -Force
+          if (Test-Path dist\Easy-FFmpeg.dist\Easy-FFmpeg.exe) {
+            Write-Error "主 exe 未移出 dist"
+            exit 1
+          }
+
+      - name: Build installer (Inno Setup)
+        run: |
+          $ver = python -c "from app.common.setting import VERSION; print(VERSION)"
+          Write-Host "Installer version: $ver"
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Error "未找到 ISCC.exe: $iscc"
+            exit 1
+          }
+          & $iscc "/DMyAppVersion=$ver" "Easy-FFmpeg.iss"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Easy-FFmpeg-win-x86_64-setup
+          path: Output\Easy-FFmpeg.exe
+          retention-days: 7
+
+  build-linux:
+    name: Build Linux ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+            deb_arch: amd64
+            rpm_arch: x86_64
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            deb_arch: arm64
+            rpm_arch: aarch64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf binutils build-essential python3-dev ruby ruby-dev rubygems
+
+      - name: Install fpm
+        run: sudo gem install fpm
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Get version
+        # 从 app/common/setting.py 读取 VERSION，避免硬编码
+        id: version
+        run: echo "version=$(python3 -c 'from app.common.setting import VERSION; print(VERSION)')" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: python3 deploy.py
+
+      - name: Prepare package root
+        run: |
+          mkdir -p package/opt/Easy-FFmpeg
+          cp -a dist/Easy-FFmpeg.dist/. package/opt/Easy-FFmpeg/
+          # 创建启动脚本（方便 /usr/bin 软链）
+          mkdir -p package/usr/bin
+          cat > package/usr/bin/easy-ffmpeg << 'EOF'
+          #!/bin/bash
+          exec /opt/Easy-FFmpeg/Easy-FFmpeg "$@"
+          EOF
+          chmod +x package/usr/bin/easy-ffmpeg
+
+      - name: Package (deb + rpm)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # 打 deb 包（声明依赖 ffmpeg，安装时自动拉取）
+          fpm -s dir -t deb \
+            -n easy-ffmpeg \
+            -v "${VERSION}" \
+            --architecture ${{ matrix.deb_arch }} \
+            --description "Easy FFmpeg - Simple FFmpeg GUI / tool" \
+            --url "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" \
+            --maintainer "Easy FFmpeg" \
+            --depends ffmpeg \
+            --prefix / \
+            -C package \
+            -p dist/easy-ffmpeg_${VERSION}_${{ matrix.deb_arch }}.deb \
+            .
+
+          # 打 rpm 包（声明依赖 ffmpeg，安装时自动拉取）
+          fpm -s dir -t rpm \
+            -n easy-ffmpeg \
+            -v "${VERSION}" \
+            --architecture ${{ matrix.rpm_arch }} \
+            --description "Easy FFmpeg - Simple FFmpeg GUI / tool" \
+            --url "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" \
+            --maintainer "Easy FFmpeg" \
+            --depends ffmpeg \
+            --prefix / \
+            -C package \
+            -p dist/easy-ffmpeg-${VERSION}-1.${{ matrix.rpm_arch }}.rpm \
+            .
+
+          # 只保留软件包，清理临时目录
+          rm -rf package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Easy-FFmpeg-linux-${{ matrix.arch }}
+          path: |
+            dist/easy-ffmpeg_*.deb
+            dist/easy-ffmpeg-*.rpm
+          retention-days: 7
+
+  build-macos:
+    name: Build macOS DMG
+    # macos-13 已于 2025-12 退役，macos-15-intel 是 GitHub 官方 Intel x86_64 替代
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # requirements-mac.txt 通过 -r 自动带入通用 requirements.txt，并追加 PyObjC 绑定
+          pip install -r requirements-mac.txt
+
+      - name: Download ffmpeg (evermeet.cx, Intel x86_64)
+        run: |
+          mkdir -p tools
+          curl -L -o ffmpeg.zip https://evermeet.cx/ffmpeg/getrelease/zip
+          unzip -o ffmpeg.zip -d tools
+          chmod +x tools/ffmpeg
+          rm ffmpeg.zip
+          ./tools/ffmpeg -version | head -n 1
+
+      - name: Build
+        run: python3 deploy.py
+
+      - name: Package
+        run: |
+          cd dist
+          ls -la
+          # Nuitka --macos-create-app-bundle 产出 Easy-FFmpeg.app
+          APP=$(find . -maxdepth 1 -name "*.app" -type d | head -n 1)
+          if [ -z "$APP" ]; then
+            echo "未找到 .app 产物"
+            exit 1
+          fi
+          # 准备 DMG 暂存目录：放入 .app 并建立 /Applications 快捷方式（拖拽安装）
+          STAGING="dmg-staging"
+          mkdir -p "$STAGING"
+          cp -R "$APP" "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+          echo "Creating DMG from $APP"
+          # hdiutil 生成只读压缩 DMG（macOS 原生分发格式，保留符号链接与可执行位）
+          hdiutil create \
+            -volname "Easy FFmpeg" \
+            -srcfolder "$STAGING" \
+            -ov \
+            -format UDZO \
+            Easy-FFmpeg-macos-x86_64.dmg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Easy-FFmpeg-macos-x86_64
+          path: dist/Easy-FFmpeg-macos-x86_64.dmg
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify version matches tag
+        # 防止 tag 与 app/common/setting.py 的 VERSION 不一致导致产物版本错乱
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          APP_VERSION=$(python3 -c "from app.common.setting import VERSION; print(VERSION)")
+          if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match app VERSION ($APP_VERSION). Update app/common/setting.py and re-tag."
+            exit 1
+          fi
+          echo "Version OK: $APP_VERSION"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Prepare release notes
+        # 读取仓库根 RELEASE_NOTES.md；文件缺失时用自动生成内容，避免发布失败
+        run: |
+          if [ -f RELEASE_NOTES.md ]; then
+            cp RELEASE_NOTES.md /tmp/RELEASE_NOTES.md
+            echo "Using RELEASE_NOTES.md"
+          else
+            {
+              echo "## Easy FFmpeg $GITHUB_REF_NAME"
+              echo ""
+              echo "此 Release 未提供 RELEASE_NOTES.md，已使用自动生成的发布说明。"
+            } > /tmp/RELEASE_NOTES.md
+            echo "RELEASE_NOTES.md not found, using auto-generated notes"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Easy FFmpeg ${{ github.ref_name }}
+          body_path: /tmp/RELEASE_NOTES.md
+          files: release-assets/**
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
