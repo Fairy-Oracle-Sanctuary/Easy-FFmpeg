@@ -1,0 +1,12 @@
+# macOS 专属依赖
+# 安装本文件会自动带入通用依赖（requirements.txt）
+
+-r requirements.txt
+
+# PyObjC：macOS 原生框架绑定
+# - Cocoa/AppKit：无边框窗口、系统标题栏按钮、NSApplication
+#   见 libs/qfluentwidgets_pro/qframelesswindow/mac 与 app/view/main_window.py
+# - Quartz.CoreGraphics：mac_utils 中的事件/坐标处理
+pyobjc-core
+pyobjc-framework-Cocoa
+pyobjc-framework-Quartz

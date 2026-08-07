@@ -1,0 +1,69 @@
+name: Deploy macOS
+
+# 仅当 push 的提交消息包含 [deploy mac] 时才打包
+# 例：git commit -m "feat: 新增功能 [deploy mac]"
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Build macOS x86_64
+    # 判断最新一条提交消息是否含 [deploy mac]
+    if: contains(github.event.head_commit.message, '[deploy mac]')
+    # macos-13 已于 2025-12 退役，macos-15-intel 是 GitHub 官方 Intel x86_64 替代
+    # evermeet.cx 仅提供 Intel 静态 ffmpeg，Apple Silicon 用户经 Rosetta 2 运行
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # requirements-mac.txt 通过 -r 自动带入通用 requirements.txt，并追加 PyObjC 绑定
+          pip install -r requirements-mac.txt
+
+      - name: Download ffmpeg (evermeet.cx, Intel x86_64)
+        run: |
+          mkdir -p tools
+          # evermeet.cx 只提供 Intel 静态 ffmpeg；release zip 内含单个 ffmpeg 可执行文件
+          curl -L -o ffmpeg.zip https://evermeet.cx/ffmpeg/getrelease/zip
+          unzip -o ffmpeg.zip -d tools
+          chmod +x tools/ffmpeg
+          rm ffmpeg.zip
+          ./tools/ffmpeg -version | head -n 1
+
+      - name: Build
+        run: python3 deploy.py
+
+      - name: Package
+        run: |
+          cd dist
+          ls -la
+          # Nuitka --macos-create-app-bundle 产出 Easy-FFmpeg.app
+          APP=$(find . -maxdepth 1 -name "*.app" -type d | head -n 1)
+          if [ -z "$APP" ]; then
+            echo "未找到 .app 产物"
+            exit 1
+          fi
+          echo "Packaging $APP"
+          # tar.gz 保留可执行位与符号链接（.app 内 Qt 框架可能含符号链接）
+          tar -czf Easy-FFmpeg-macos-x86_64.tar.gz "$APP"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Easy-FFmpeg-macos-x86_64
+          path: dist/Easy-FFmpeg-macos-x86_64.tar.gz
+          retention-days: 30
