@@ -167,17 +167,55 @@ jobs:
         run: |
           mkdir -p package/opt/Easy-FFmpeg
           cp -a dist/Easy-FFmpeg.dist/. package/opt/Easy-FFmpeg/
+          # 动态探测实际主程序名：Nuitka 有同名冲突时会生成 Easy-FFmpeg.bin
+          # 而不是 Easy-FFmpeg，硬编码会写出失效的启动脚本
+          if [ -f dist/Easy-FFmpeg.dist/Easy-FFmpeg ]; then
+            MAIN_BIN=Easy-FFmpeg
+          elif [ -f dist/Easy-FFmpeg.dist/Easy-FFmpeg.bin ]; then
+            MAIN_BIN=Easy-FFmpeg.bin
+          else
+            echo "ERROR: main binary not found in dist/Easy-FFmpeg.dist/"
+            ls -l dist/Easy-FFmpeg.dist/
+            exit 1
+          fi
+          echo "Main binary: ${MAIN_BIN}"
           # 创建启动脚本（方便 /usr/bin 软链）
           mkdir -p package/usr/bin
-          cat > package/usr/bin/easy-ffmpeg << 'EOF'
+          cat > package/usr/bin/easy-ffmpeg << EOF
           #!/bin/bash
-          exec /opt/Easy-FFmpeg/Easy-FFmpeg "$@"
+          exec /opt/Easy-FFmpeg/${MAIN_BIN} "\$@"
           EOF
           chmod +x package/usr/bin/easy-ffmpeg
-          # Debian 规范：版权文件放 /usr/share/doc/<包名>/copyright，
-          # 软件中心据此显示许可证（缺失时会显示 unknown）
+          # Debian 规范：DEP-5 machine-readable 格式的 copyright 文件
+          # 软件中心（GNOME Software / Ubuntu Software）靠它识别许可证，简单复制 LICENSE 会显示 unknown
           mkdir -p package/usr/share/doc/easy-ffmpeg
-          cp LICENSE package/usr/share/doc/easy-ffmpeg/copyright
+          cat > package/usr/share/doc/easy-ffmpeg/copyright << 'EOF'
+          Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+          Upstream-Name: Easy FFmpeg
+          Upstream-Contact: Fairy-Oracle-Sanctuary
+          Source: https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg
+
+          Files: *
+          Copyright: 2024-2026 Fairy-Oracle-Sanctuary and contributors
+          License: GPL-3.0-or-later
+
+          License: GPL-3.0-or-later
+           This program is free software: you can redistribute it and/or modify
+           it under the terms of the GNU General Public License as published by
+           the Free Software Foundation, either version 3 of the License, or
+           (at your option) any later version.
+           .
+           This program is distributed in the hope that it will be useful,
+           but WITHOUT ANY WARRANTY; without even the implied warranty of
+           MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+           GNU General Public License for more details.
+           .
+           You should have received a copy of the GNU General Public License
+           along with this program.  If not, see <https://www.gnu.org/licenses/>.
+           .
+           On Debian systems, the complete text of the GNU General
+           Public License version 3 can be found in "/usr/share/common-licenses/GPL-3".
+          EOF
           # 应用菜单入口：.desktop 文件 + 图标（否则软件中心看不到应用，只能命令行启动）
           mkdir -p package/usr/share/applications package/usr/share/pixmaps
           cat > package/usr/share/applications/easy-ffmpeg.desktop << 'EOF'
@@ -205,7 +243,7 @@ jobs:
             --description "Easy FFmpeg - Simple FFmpeg GUI / tool" \
             --url "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" \
             --maintainer "Easy FFmpeg" \
-            --license "GPL-3.0" \
+            --license "GPL-3.0-or-later" \
             --depends ffmpeg \
             --prefix / \
             -C package \
@@ -220,7 +258,7 @@ jobs:
             --description "Easy FFmpeg - Simple FFmpeg GUI / tool" \
             --url "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" \
             --maintainer "Easy FFmpeg" \
-            --license "GPL-3.0" \
+            --license "GPL-3.0-or-later" \
             --depends ffmpeg \
             --prefix / \
             -C package \
