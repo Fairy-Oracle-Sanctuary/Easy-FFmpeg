@@ -38,7 +38,7 @@ DisableProgramGroupPage=yes
 LicenseFile=LICENSE
 ; 取消注释以下行以在非管理员安装模式下运行 (仅为当前用户安装)。
 PrivilegesRequired=admin
-OutputBaseFilename=Easy-FFmpeg
+OutputBaseFilename=Easy-FFmpeg-v{#MyAppVersion}-Windows-x86_64-Setup
 OutputDir=Output
 SolidCompression=yes
 ; 根据系统语言自动选择安装界面语言，不弹语言选择框

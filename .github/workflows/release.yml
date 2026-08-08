@@ -112,8 +112,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Easy-FFmpeg-win-x86_64-setup
-          path: Output\Easy-FFmpeg.exe
+          name: Easy-FFmpeg-windows-x86_64
+          # ISCC 输出到 .iss 中 OutputDir 指定的 Output 子目录，文件名带版本号
+          path: Output/Easy-FFmpeg-v*-Windows-x86_64-Setup.exe
           retention-days: 7
 
   build-linux:
@@ -248,7 +249,7 @@ jobs:
             --depends ffmpeg \
             --prefix / \
             -C package \
-            -p dist/easy-ffmpeg_${VERSION}_${{ matrix.deb_arch }}.deb \
+            -p dist/Easy-FFmpeg-v${VERSION}-Linux-${{ matrix.arch }}.deb \
             .
 
           # 打 rpm 包（声明依赖 ffmpeg，安装时自动拉取）
@@ -263,7 +264,7 @@ jobs:
             --depends ffmpeg \
             --prefix / \
             -C package \
-            -p dist/easy-ffmpeg-${VERSION}-1.${{ matrix.rpm_arch }}.rpm \
+            -p dist/Easy-FFmpeg-v${VERSION}-Linux-${{ matrix.arch }}.rpm \
             .
 
           # 只保留软件包，清理临时目录
@@ -274,8 +275,8 @@ jobs:
         with:
           name: Easy-FFmpeg-linux-${{ matrix.arch }}
           path: |
-            dist/easy-ffmpeg_*.deb
-            dist/easy-ffmpeg-*.rpm
+            dist/Easy-FFmpeg-v*-Linux-${{ matrix.arch }}.deb
+            dist/Easy-FFmpeg-v*-Linux-${{ matrix.arch }}.rpm
           retention-days: 7
 
   build-macos:
@@ -309,10 +310,17 @@ jobs:
           rm ffmpeg.zip
           ./tools/ffmpeg -version | head -n 1
 
+      - name: Get version
+        # 从 app/common/setting.py 读取 VERSION，避免硬编码
+        id: version
+        run: echo "version=$(python3 -c 'from app.common.setting import VERSION; print(VERSION)')" >> "$GITHUB_OUTPUT"
+
       - name: Build
         run: python3 deploy.py
 
       - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           cd dist
           ls -la
@@ -334,13 +342,13 @@ jobs:
             -srcfolder "$STAGING" \
             -ov \
             -format UDZO \
-            Easy-FFmpeg-macos-x86_64.dmg
+            Easy-FFmpeg-v${VERSION}-macOS-x86_64.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Easy-FFmpeg-macos-x86_64
-          path: dist/Easy-FFmpeg-macos-x86_64.dmg
+          path: dist/Easy-FFmpeg-v*-macOS-x86_64.dmg
           retention-days: 7
 
   release:
