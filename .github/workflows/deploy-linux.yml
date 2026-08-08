@@ -143,7 +143,7 @@ jobs:
             --depends ffmpeg \
             --prefix / \
             -C package \
-            -p dist/easy-ffmpeg_${VERSION}_${{ matrix.deb_arch }}.deb \
+            -p dist/Easy-FFmpeg-v${VERSION}-Linux-${{ matrix.arch }}.deb \
             .
 
           # 打 rpm 包（声明依赖 ffmpeg，安装时自动拉取）
@@ -158,7 +158,7 @@ jobs:
             --depends ffmpeg \
             --prefix / \
             -C package \
-            -p dist/easy-ffmpeg-${VERSION}-1.${{ matrix.rpm_arch }}.rpm \
+            -p dist/Easy-FFmpeg-v${VERSION}-Linux-${{ matrix.arch }}.rpm \
             .
 
           # 只保留软件包，清理临时目录
@@ -168,8 +168,8 @@ jobs:
         # 上传软件包：deb / rpm
         uses: actions/upload-artifact@v4
         with:
-          name: Easy-FFmpeg-${{ matrix.arch }}
+          name: Easy-FFmpeg-linux-${{ matrix.arch }}
           path: |
-            dist/easy-ffmpeg_*.deb
-            dist/easy-ffmpeg-*.rpm
+            dist/Easy-FFmpeg-v*-Linux-${{ matrix.arch }}.deb
+            dist/Easy-FFmpeg-v*-Linux-${{ matrix.arch }}.rpm
           retention-days: 30

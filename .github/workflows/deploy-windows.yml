@@ -121,7 +121,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Easy-FFmpeg-win-x86_64-setup
-          # ISCC 输出到 .iss 中 OutputDir 指定的 Output 子目录
-          path: Output\Easy-FFmpeg.exe
+          name: Easy-FFmpeg-windows-x86_64
+          # ISCC 输出到 .iss 中 OutputDir 指定的 Output 子目录，文件名带版本号
+          path: Output/Easy-FFmpeg-v*-Windows-x86_64-Setup.exe
           retention-days: 30

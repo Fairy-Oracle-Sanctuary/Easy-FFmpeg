@@ -47,7 +47,14 @@ jobs:
       - name: Build
         run: python3 deploy.py
 
+      - name: Get version
+        # 从 app/common/setting.py 读取 VERSION，避免硬编码
+        id: version
+        run: echo "version=$(python3 -c 'from app.common.setting import VERSION; print(VERSION)')" >> "$GITHUB_OUTPUT"
+
       - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           cd dist
           ls -la
@@ -69,11 +76,11 @@ jobs:
             -srcfolder "$STAGING" \
             -ov \
             -format UDZO \
-            Easy-FFmpeg-macos-x86_64.dmg
+            Easy-FFmpeg-v${VERSION}-macOS-x86_64.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Easy-FFmpeg-macos-x86_64
-          path: dist/Easy-FFmpeg-macos-x86_64.dmg
+          path: dist/Easy-FFmpeg-v*-macOS-x86_64.dmg
           retention-days: 30

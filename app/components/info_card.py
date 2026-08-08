@@ -252,51 +252,15 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         )
         if not w.exec():
             return
+        
+        window = self.window()
+        if hasattr(window, "_versionThread") and window._versionThread is not None:
+            thread = window._versionThread
+            if thread.isRunning():
+                thread.terminate()
 
         # 删除配置文件，让下次启动使用默认值
         safeRemoveFile(str(CONFIG_FILE))
 
-        # 先启动新实例，再退出旧实例（比挂在 aboutToQuit 上更稳）
-        self.__spawnNewInstance()
-
-        # 立即释放单例锁，避免新实例误 attach 到本实例后自动退出
-        app = QApplication.instance()
-        if hasattr(app, "memory"):
-            app.memory.detach()
-
-        # 稍作延迟再退出，给新进程启动时间
-        from PySide6.QtCore import QTimer
-
-        QTimer.singleShot(300, app.quit)
-
-    def __spawnNewInstance(self):
-        """跨平台启动新的应用实例（兼容 Nuitka 三端打包）"""
-        import subprocess
-
-        args = sys.argv[1:]
-
-        if sys.platform == "darwin":
-            executable = sys.executable
-            app_path = os.path.abspath(
-                os.path.join(os.path.dirname(executable), "..", "..")
-            )
-            if app_path.endswith(".app"):
-                subprocess.Popen(["open", "-n", app_path], start_new_session=True)
-                return
-            program = executable
-
-        else:
-            program = sys.executable
-            if sys.platform.startswith("linux") and not os.access(program, os.X_OK):
-                possible = program + ".bin"
-                if os.path.exists(possible):
-                    program = possible
-
-        try:
-            subprocess.Popen(
-                [program] + args,
-                start_new_session=True,
-                cwd=os.path.dirname(program) or None,
-            )
-        except Exception:
-            QProcess.startDetached(program, args)
+        QProcess.startDetached(sys.executable, sys.argv)
+        QApplication.instance().quit()
