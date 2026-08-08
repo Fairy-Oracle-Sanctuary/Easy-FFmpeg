@@ -1,4 +1,4 @@
-# Easy FFmpeg v0.5.0
+# Easy FFmpeg v0.6.0
 
 ## 新增功能
 - 测试用Release
@@ -13,10 +13,10 @@
 
 | 平台 | 架构 | 安装包 |
 | --- | --- | --- |
-| Windows | x86_64 | [Easy-FFmpeg-v0.5.0-Windows-x86_64-Setup.exe](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.5.0/Easy-FFmpeg-v0.5.0-Windows-x86_64-Setup.exe) |
-| macOS | x86_64 (Intel / Rosetta 2) | [Easy-FFmpeg-v0.5.0-macOS-x86_64.dmg](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.5.0/Easy-FFmpeg-v0.5.0-macOS-x86_64.dmg) |
-| Linux | x86_64 | [Easy-FFmpeg-v0.5.0-Linux-x86_64.deb](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.5.0/Easy-FFmpeg-v0.5.0-Linux-x86_64.deb) · [Easy-FFmpeg-v0.5.0-Linux-x86_64.rpm](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.5.0/Easy-FFmpeg-v0.5.0-Linux-x86_64.rpm) |
-| Linux | aarch64 | [Easy-FFmpeg-v0.5.0-Linux-aarch64.deb](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.5.0/Easy-FFmpeg-v0.5.0-Linux-aarch64.deb) · [Easy-FFmpeg-v0.5.0-Linux-aarch64.rpm](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.5.0/Easy-FFmpeg-v0.5.0-Linux-aarch64.rpm) |
+| Windows | x86_64 | [Easy-FFmpeg-v0.6.0-Windows-x86_64-Setup.exe](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.6.0/Easy-FFmpeg-v0.6.0-Windows-x86_64-Setup.exe) |
+| macOS | x86_64 (Intel / Rosetta 2) | [Easy-FFmpeg-v0.6.0-macOS-x86_64.dmg](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.6.0/Easy-FFmpeg-v0.6.0-macOS-x86_64.dmg) |
+| Linux | x86_64 | [Easy-FFmpeg-v0.6.0-Linux-x86_64.deb](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.6.0/Easy-FFmpeg-v0.6.0-Linux-x86_64.deb) · [Easy-FFmpeg-v0.6.0-Linux-x86_64.rpm](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.6.0/Easy-FFmpeg-v0.6.0-Linux-x86_64.rpm) |
+| Linux | aarch64 | [Easy-FFmpeg-v0.6.0-Linux-aarch64.deb](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.6.0/Easy-FFmpeg-v0.6.0-Linux-aarch64.deb) · [Easy-FFmpeg-v0.6.0-Linux-aarch64.rpm](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v0.6.0/Easy-FFmpeg-v0.6.0-Linux-aarch64.rpm) |
 
 ## 使用说明
 
