@@ -1,0 +1,6 @@
+# 通用依赖（通过 -r 带入，避免重复维护）
+-r requirements.txt
+
+# Windows 专属：qframelesswindow 的 win32_utils.py / window_effect.py
+# 依赖 pywin32（win32api / win32con / win32gui / win32print）
+pywin32>=312
