@@ -17,7 +17,7 @@ class SystemTrayIcon(QSystemTrayIcon):
                     "显示/隐藏窗口",
                     triggered=lambda: event_bus.appMessageSig.emit("switch"),
                 ),
-                Action("退出", triggered=QApplication.instance().exit),
+                Action("退出", triggered=lambda: event_bus.forceQuitSig.emit()),
             ]
         )
         self.setContextMenu(self.menu)

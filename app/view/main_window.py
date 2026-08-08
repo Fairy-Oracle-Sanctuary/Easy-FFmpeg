@@ -142,6 +142,7 @@ class MainWindow(TopFluentWindow):
         event_bus.appMessageSig.connect(self.onMessage)
         event_bus.appErrorSig.connect(self.onError)
         event_bus.trayMessageSig.connect(self._onTrayMessage)
+        event_bus.forceQuitSig.connect(self.forceQuit)
         self.systemTrayIcon.messageClicked.connect(self.onSystemTrayMessageClicked)
         self.systemTrayIcon.activated.connect(self.onSystemTrayActivated)
         qconfig.themeChanged.connect(self._updateThemeButtonIcon)
@@ -326,7 +327,7 @@ class MainWindow(TopFluentWindow):
             self.onMessage("show")
 
     def closeEvent(self, event):
-        if cfg.get(cfg.closeDirectly):
+        if getattr(self, "_really_quit", False) or cfg.get(cfg.closeDirectly):
             event.accept()
             self.onExit()
         else:
@@ -341,3 +342,10 @@ class MainWindow(TopFluentWindow):
     def onExit(self):
         """exit main window"""
         self.systemTrayIcon.hide()
+
+    def forceQuit(self):
+        """真正退出程序（供托盘菜单、重置重启等调用）"""
+        self._really_quit = True
+        if self._versionThread.isRunning():
+            self._versionThread.terminate()
+        QApplication.instance().exit(0)

@@ -35,7 +35,6 @@ from ..common.text import Text
 from ..common.utils import safeRemoveFile
 from .statistic_widget import StatisticsWidget
 
-
 class EasyFFmpegInfoCard(SimpleCardWidget):
     """Easy FFmpeg information card"""
 
@@ -252,15 +251,44 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         )
         if not w.exec():
             return
-        
-        window = self.window()
-        if hasattr(window, "_versionThread") and window._versionThread is not None:
-            thread = window._versionThread
-            if thread.isRunning():
-                thread.terminate()
 
         # 删除配置文件，让下次启动使用默认值
         safeRemoveFile(str(CONFIG_FILE))
 
-        QProcess.startDetached(sys.executable, sys.argv)
-        QApplication.instance().quit()
+        self.__restartApplication()
+
+    def __restartApplication(self):
+        """重启应用程序（兼容源码运行和 Nuitka 打包）"""
+        main_window = self.window()
+
+        # 标记主窗口真正退出，避免最小化到托盘
+        if main_window is not None:
+            main_window._really_quit = True
+            # 立即隐藏托盘图标
+            if hasattr(main_window, "systemTrayIcon"):
+                try:
+                    main_window.systemTrayIcon.hide()
+                except Exception:
+                    pass
+
+            # 等待版本检查线程结束，避免 QThread 销毁时仍在运行导致崩溃
+            if hasattr(main_window, "_versionThread") and main_window._versionThread is not None:
+                thread = main_window._versionThread
+                if thread.isRunning():
+                    thread.terminate()
+
+        # 在应用真正退出后再启动新实例，避免单例共享内存 / 本地套接字冲突
+        # （Nuitka 打包后尤其需要这个时序）
+        QApplication.instance().aboutToQuit.connect(self.__spawnNewInstance)
+        QApplication.instance().exit(0)
+
+    def __spawnNewInstance(self):
+        """启动新的应用实例"""
+        if getattr(sys, "frozen", False) or "__compiled__" in globals():
+            program = os.path.abspath(sys.argv[0])
+            args = sys.argv[1:]
+        else:
+            # 源码运行
+            program = sys.executable
+            args = [os.path.abspath(sys.argv[0])] + sys.argv[1:]
+        QProcess.startDetached(program, args)

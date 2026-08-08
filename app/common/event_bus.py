@@ -53,6 +53,8 @@ class GlobalEventBus(QObject):
     # 托盘消息 (title, message, type)  type: "info" | "warning"
     trayMessageSig = Signal(str, str, str)
 
-
+    # 关闭应用
+    forceQuitSig = Signal()
+    
 # 创建全局单例
 event_bus = GlobalEventBus()
