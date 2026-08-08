@@ -256,17 +256,47 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         # 删除配置文件，让下次启动使用默认值
         safeRemoveFile(str(CONFIG_FILE))
 
-        # 应用退出后再启动新实例（aboutToQuit 触发时旧进程即将终止，
-        # 单例锁 QSharedMemory 随之释放，新实例的 3 秒重试循环才能 create 成功）
+        # 先启动新实例，再退出旧实例（比挂在 aboutToQuit 上更稳）
+        self.__spawnNewInstance()
+
+        # 立即释放单例锁，避免新实例误 attach 到本实例后自动退出
         app = QApplication.instance()
-        app.aboutToQuit.connect(self.__spawnNewInstance)
-        app.quit()
+        if hasattr(app, "memory"):
+            app.memory.detach()
+
+        # 稍作延迟再退出，给新进程启动时间
+        from PySide6.QtCore import QTimer
+
+        QTimer.singleShot(300, app.quit)
 
     def __spawnNewInstance(self):
-        """启动新的应用实例（旧实例退出完成后由 aboutToQuit 触发）"""
-        program = sys.executable
-        if getattr(sys, "frozen", False) or getattr(sys, "__compiled__", False):
-            args = sys.argv[1:]
+        """跨平台启动新的应用实例（兼容 Nuitka 三端打包）"""
+        import subprocess
+
+        args = sys.argv[1:]
+
+        if sys.platform == "darwin":
+            executable = sys.executable
+            app_path = os.path.abspath(
+                os.path.join(os.path.dirname(executable), "..", "..")
+            )
+            if app_path.endswith(".app"):
+                subprocess.Popen(["open", "-n", app_path], start_new_session=True)
+                return
+            program = executable
+
         else:
-            args = [os.path.abspath(sys.argv[0])] + sys.argv[1:]
-        QProcess.startDetached(program, args)
+            program = sys.executable
+            if sys.platform.startswith("linux") and not os.access(program, os.X_OK):
+                possible = program + ".bin"
+                if os.path.exists(possible):
+                    program = possible
+
+        try:
+            subprocess.Popen(
+                [program] + args,
+                start_new_session=True,
+                cwd=os.path.dirname(program) or None,
+            )
+        except Exception:
+            QProcess.startDetached(program, args)
