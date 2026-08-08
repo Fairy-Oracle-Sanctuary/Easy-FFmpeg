@@ -4,7 +4,7 @@ from pathlib import Path
 
 AUTHOR = "baby2016"
 TEAM = "天机阁(Fairy-Oracle-Sanctuary)"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 YEAR = "2026"
 UPDATE_TIME = "2026-8-8"
 if sys.platform == "win32":

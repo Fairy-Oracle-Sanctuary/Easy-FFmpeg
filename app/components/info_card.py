@@ -1,3 +1,4 @@
+import os
 import sys
 
 from PySide6.QtCore import QProcess, QSize, Qt, QUrl
@@ -255,11 +256,17 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         # 删除配置文件，让下次启动使用默认值
         safeRemoveFile(str(CONFIG_FILE))
 
-        # 释放单例锁（QSharedMemory），让新实例能正常启动
+        # 应用退出后再启动新实例（aboutToQuit 触发时旧进程即将终止，
+        # 单例锁 QSharedMemory 随之释放，新实例的 3 秒重试循环才能 create 成功）
         app = QApplication.instance()
-        if hasattr(app, "memory"):
-            app.memory.detach()
+        app.aboutToQuit.connect(self.__spawnNewInstance)
+        app.quit()
 
-        # 启动新实例后退出当前进程
-        QProcess.startDetached(sys.executable, sys.argv)
-        QApplication.quit()
+    def __spawnNewInstance(self):
+        """启动新的应用实例（旧实例退出完成后由 aboutToQuit 触发）"""
+        program = sys.executable
+        if getattr(sys, "frozen", False) or getattr(sys, "__compiled__", False):
+            args = sys.argv[1:]
+        else:
+            args = [os.path.abspath(sys.argv[0])] + sys.argv[1:]
+        QProcess.startDetached(program, args)
