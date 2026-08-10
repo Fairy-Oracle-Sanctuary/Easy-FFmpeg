@@ -2,10 +2,13 @@ import sys
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon
-from PySide6.QtWidgets import QApplication, QFileDialog, QSystemTrayIcon
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QSystemTrayIcon,
+)
 
 from app.common.event_bus import event_bus
-from app.common.setting import RELEASE_URL
 from app.common.text import Text
 from app.components.infobar import NotificationService
 from app.service.version_service import VersionService
@@ -19,6 +22,10 @@ from libs.qfluentwidgets_pro import (
     InfoBarPosition,
     InfoLevel,
     MessageBox,
+    MessageBoxBase,
+    ProgressBar,
+    SubtitleLabel,
+    TextBrowser,
     Theme,
     TopFluentWindow,
     TopNavigationItemPosition,
@@ -34,6 +41,8 @@ from ..common.setting import (
     FEEDBACK_URL,
     FFMPEG_WEBSITE,
     GITHUB_URL,
+    IS_MS_STORE_VERSION,
+    RELEASE_URL,
     VIDEO_CONTAINERS,
 )
 from ..common.utils import openUrl
@@ -41,6 +50,131 @@ from ..components.menu_bar import MenuBar
 from ..components.system_tray_icon import SystemTrayIcon
 from ..service.version_service import VersionCheckThread
 from ..view.advance_interface import AdvanceInterface
+from ..view.more_interface import MoreInterface
+
+
+class UpdateDialog(MessageBoxBase):
+    """更新对话框 - 显示更新日志并下载安装包（参考 Fairy-Kekkai-Workshop）
+
+    - 商店版（IS_MS_STORE_VERSION=True）：仅提供"前往下载"按钮，跳转浏览器
+    - 非商店版：内嵌进度条，首次点击开始下载，下载完成后转为"打开文件夹"
+    """
+
+    def __init__(self, version_service, version: str, notes: str, parent=None):
+        super().__init__(parent)
+        self.globalText = Text()
+        self.versionService = version_service
+        self.version = version
+        self.notes = notes
+        self.downloadThread = None
+        self.filepath = ""
+        self._downloading = False
+        self._downloaded = False
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        self.titleLabel = SubtitleLabel(
+            self.globalText.NewVersionAvailable.format(self.version), self
+        )
+        self.viewLayout.setSpacing(12)
+        self.viewLayout.addWidget(self.titleLabel)
+
+        # 更新日志（TextBrowser 渲染 Markdown）
+        self.textBrowser = TextBrowser(self)
+        self.textBrowser.setMarkdown(self.notes)
+        self.textBrowser.setOpenExternalLinks(True)
+        self.textBrowser.setMinimumWidth(420)
+        self.textBrowser.setMaximumHeight(280)
+        self.viewLayout.addWidget(self.textBrowser)
+
+        # 进度条（仅非商店版下载时显示）
+        self.progressBar = ProgressBar(self)
+        self.progressBar.setVisible(False)
+        self.viewLayout.addWidget(self.progressBar)
+
+        # 商店版只能跳转浏览器，非商店版可直接下载安装包
+        self.yesButton.setText(
+            self.globalText.GoToDownload
+            if IS_MS_STORE_VERSION
+            else self.globalText.DownloadInstaller
+        )
+        self.cancelButton.setText(self.globalText.Close)
+        self.widget.setMinimumWidth(480)
+        self.widget.setMinimumHeight(350)
+
+    def accept(self):
+        """重写接受方法：商店版跳转浏览器；非商店版首次点击开始下载，再次点击打开文件夹"""
+        if self._downloading:
+            return  # 下载进行中，忽略点击
+
+        if IS_MS_STORE_VERSION:
+            QDesktopServices.openUrl(QUrl(RELEASE_URL))
+            super().accept()
+            return
+
+        if self._downloaded:
+            # 已下载完成，打开文件夹并关闭
+            VersionService.openFolder(self.filepath)
+            super().accept()
+            return
+
+        # 非商店版：开始下载
+        self._start_download()
+
+    def _start_download(self):
+        """开始下载安装包"""
+        self._downloading = True
+        self.yesButton.setEnabled(False)
+        self.yesButton.setText(self.globalText.Downloading)
+        self.cancelButton.setEnabled(False)
+        self.progressBar.setVisible(True)
+        self.progressBar.setValue(0)
+
+        self.downloadThread, self.filepath = self.versionService.createDownloadThread()
+        self.downloadThread.progress.connect(self._on_progress)
+        self.downloadThread.succeeded.connect(self._on_finished)
+        self.downloadThread.error.connect(self._on_error)
+        # 连接 QThread 内置 finished 信号，在线程完全结束后安全清理
+        self.downloadThread.finished.connect(self._on_thread_finished)
+        self.downloadThread.start()
+
+    def _on_progress(self, downloaded, total):
+        if total > 0:
+            self.progressBar.setValue(int(downloaded * 100 / total))
+
+    def _on_finished(self, filepath):
+        """下载成功（线程即将结束，但尚未完全退出）"""
+        self.progressBar.setValue(100)
+        self.yesButton.setText(self.globalText.OpenFolder)
+        self.yesButton.setEnabled(True)
+        self.cancelButton.setEnabled(True)
+        self._downloading = False
+        self._downloaded = True
+        self.textBrowser.append(self.globalText.InstallerDownloadedTo.format(filepath))
+        # 自动打开文件夹
+        VersionService.openFolder(filepath)
+
+    def _on_error(self, error_msg):
+        """下载失败（线程即将结束，但尚未完全退出）"""
+        self.progressBar.setVisible(False)
+        self.yesButton.setEnabled(True)
+        self.yesButton.setText(self.globalText.DownloadInstaller)
+        self.cancelButton.setEnabled(True)
+        self._downloading = False
+        self.textBrowser.append(self.globalText.DownloadFailed.format(error_msg))
+
+    def _on_thread_finished(self):
+        """QThread 内置 finished 信号：线程已完全停止，可安全释放引用"""
+        if self.downloadThread is not None:
+            self.downloadThread.deleteLater()
+            self.downloadThread = None
+
+    def reject(self):
+        """重写拒绝方法：下载进行中时不允许关闭"""
+        if self._downloading:
+            return
+        super().reject()
 
 
 class MainWindow(TopFluentWindow):
@@ -53,6 +187,7 @@ class MainWindow(TopFluentWindow):
 
         # 初始化版本服务
         self.versionManager = VersionService()
+        self._versionThread = None
 
         # 初始化通知服务
         self.notification_service = NotificationService(self)
@@ -93,33 +228,41 @@ class MainWindow(TopFluentWindow):
         self.homeInterface = HomeInterface(self)
         self.taskInterface = TaskInterface(self)
         self.advanceInterface = AdvanceInterface(self)
+        self.moreInterface = MoreInterface(self)
         self.settingInterface = SettingInterface(self)
 
         self.addSubInterface(
             self.homeInterface,
             FIF.HOME,
-            "主页",
+            self.globalText.Home,
             TopNavigationItemPosition.LEFT,
             expanded=True,
         )
         self.taskItem = self.addSubInterface(
             self.taskInterface,
             FIF.MEDIA,
-            "任务",
+            self.globalText.Task,
             TopNavigationItemPosition.LEFT,
             expanded=True,
         )
         self.addSubInterface(
             self.advanceInterface,
             FIF.BOOK_SHELF,
-            "高级",
+            self.globalText.Advance,
+            TopNavigationItemPosition.LEFT,
+            expanded=True,
+        )
+        self.addSubInterface(
+            self.moreInterface,
+            FIF.MORE,
+            self.globalText.More,
             TopNavigationItemPosition.LEFT,
             expanded=True,
         )
         self.addSubInterface(
             self.settingInterface,
             FIF.SETTING,
-            "设置",
+            self.globalText.Settings,
             TopNavigationItemPosition.RIGHT,
             expanded=False,
         )
@@ -173,7 +316,7 @@ class MainWindow(TopFluentWindow):
         self.themeButton = TransparentToolButton(self.titleBar)
         # 与最小化按钮尺寸保持一致
         self.themeButton.setFixedSize(self.titleBar.minBtn.size())
-        self.themeButton.clicked.connect(lambda: toggleTheme())
+        self.themeButton.clicked.connect(lambda: toggleTheme(save=True))
         self._updateThemeButtonIcon()
         # 插入到最小化按钮左侧（buttonLayout: minBtn, maxBtn, closeBtn）
         self.titleBar.buttonLayout.insertWidget(
@@ -233,26 +376,33 @@ class MainWindow(TopFluentWindow):
         event_bus.checkUpdateStateChanged.emit(True)
         self._versionThread = VersionCheckThread(self.versionManager, self)
         self._versionThread.finished.connect(
-            lambda hasNew, ver: self._onVersionChecked(hasNew, ver, silent)
+            lambda hasNew, ver, notes: self._onVersionChecked(
+                hasNew, ver, notes, silent
+            )
         )
         self._versionThread.start()
 
-    def _onVersionChecked(self, hasNewVersion, latestVersion, silent):
+    def _onVersionChecked(self, hasNewVersion, latestVersion, releaseNotes, silent):
         event_bus.checkUpdateStateChanged.emit(False)
+        event_bus.newVersionDetected.emit(latestVersion if hasNewVersion else "")
         if hasNewVersion:
-            self.showMessageBox(
-                self.globalText.NewVersionDetected,
-                self.globalText.NewVersion
-                + f" {latestVersion} "
-                + self.globalText.ADYWTDI,
-                True,
-                lambda: QDesktopServices.openUrl(QUrl(RELEASE_URL)),
-            )
+            notes = self._parseReleaseNotes(releaseNotes)
+            dialog = UpdateDialog(self.versionManager, latestVersion, notes, self)
+            dialog.exec()
         elif not silent:
             self.showMessageBox(
                 self.globalText.NoNewVersion,
                 self.globalText.FKWIUTD,
             )
+
+    def _parseReleaseNotes(self, notes: str) -> str:
+        """截掉下载及之后的内容，只保留新增/改进/修复"""
+        if not notes:
+            return self.globalText.NoReleaseNotes
+        idx = notes.find("## 下载")
+        if idx != -1:
+            notes = notes[:idx].strip()
+        return notes
 
     def onMessage(self, message: str):
         """系统消息"""
@@ -278,8 +428,15 @@ class MainWindow(TopFluentWindow):
     def openFile(self):
         """打开文件对话框，选择媒体文件添加到任务"""
 
-        filters = "媒体文件 (*" + " *".join(VIDEO_CONTAINERS | AUDIO_CONTAINERS) + ")"
-        paths, _ = QFileDialog.getOpenFileNames(self, "打开文件", "", filters)
+        filters = (
+            self.globalText.MediaFiles
+            + " (*"
+            + " *".join(VIDEO_CONTAINERS | AUDIO_CONTAINERS)
+            + ")"
+        )
+        paths, _ = QFileDialog.getOpenFileNames(
+            self, self.globalText.OpenFile, "", filters
+        )
         if not paths:
             return
         self._handleFileArgs(paths)
@@ -291,9 +448,9 @@ class MainWindow(TopFluentWindow):
         from ..common.utils import classifyMediaPaths
 
         file_paths = [Path(p) for p in paths if p]
-        video, audio = classifyMediaPaths(file_paths, cfg.get(cfg.homeRecursive))
-        if video or audio:
-            event_bus.addTaskSig.emit(video, audio)
+        video, audio, image = classifyMediaPaths(file_paths, cfg.get(cfg.homeRecursive))
+        if video or audio or image:
+            event_bus.addTaskSig.emit(video, audio, image)
             self.switchTo(self.taskInterface)
             self.show()
             self.raise_()
@@ -302,8 +459,8 @@ class MainWindow(TopFluentWindow):
         """系统错误消息"""
         QApplication.clipboard().setText(message)
         self.showMessageBox(
-            "发生未处理异常",
-            "报错信息已写入系统粘贴板和日志文件，是否立即反馈？",
+            self.globalText.UnhandledException,
+            self.globalText.UnhandledExceptionDesc,
             True,
             lambda: openUrl(FEEDBACK_URL),
         )
@@ -335,7 +492,7 @@ class MainWindow(TopFluentWindow):
             self.hide()
             self.systemTrayIcon.showMessage(
                 "Easy-FFmpeg",
-                "程序已最小化到系统托盘",
+                self.globalText.MinimizedToTray,
                 QIcon(":/app/images/logo.png"),
             )
 
@@ -346,6 +503,9 @@ class MainWindow(TopFluentWindow):
     def forceQuit(self):
         """真正退出程序（供托盘菜单、重置重启等调用）"""
         self._really_quit = True
-        if self._versionThread.isRunning():
+        if (
+            getattr(self, "_versionThread", None) is not None
+            and self._versionThread.isRunning()
+        ):
             self._versionThread.terminate()
         QApplication.instance().exit(0)

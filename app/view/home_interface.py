@@ -1,6 +1,3 @@
-# from ..common.signal_bus import signalBus
-# from ..common.icon import Logo
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
@@ -8,7 +5,7 @@ from libs.qfluentwidgets_pro import DropAnyWidget, ScrollArea
 
 from ..common.config import cfg
 from ..common.event_bus import event_bus
-from ..common.setting import AUDIO_CONTAINERS, VIDEO_CONTAINERS
+from ..common.setting import AUDIO_CONTAINERS, IMAGE_CONTAINERS, VIDEO_CONTAINERS
 from ..common.text import Text
 from ..common.utils import classifyMediaPaths
 
@@ -21,7 +18,7 @@ class HomeInterface(ScrollArea):
         self.globalText = Text()
         self.view = QWidget(self)
         self.mainLayout = QVBoxLayout(self.view)
-        self.media_containers = VIDEO_CONTAINERS | AUDIO_CONTAINERS
+        self.media_containers = VIDEO_CONTAINERS | AUDIO_CONTAINERS | IMAGE_CONTAINERS
 
         # Drop
         self.Drop = DropAnyWidget()
@@ -59,5 +56,7 @@ class HomeInterface(ScrollArea):
 
     def extractPaths(self, paths, recursive=None):
         """遍历用户选择的文件和文件夹"""
-        video_set, audio_set = classifyMediaPaths(paths, cfg.get(cfg.homeRecursive))
-        event_bus.addTaskSig.emit(video_set, audio_set)
+        video_set, audio_set, image_set = classifyMediaPaths(
+            paths, cfg.get(cfg.homeRecursive)
+        )
+        event_bus.addTaskSig.emit(video_set, audio_set, image_set)

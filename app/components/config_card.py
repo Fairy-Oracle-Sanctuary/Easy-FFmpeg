@@ -122,7 +122,8 @@ class AdvancedEncoderConfigCard(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("编码器设置")
+        self.globalText = Text()
+        self.setTitle(self.globalText.EncoderSettings)
 
         self.softWareVideoCodecComboBox = ComboBox()
         self.isUseHardWareVideoCodecBtn = SwitchButton()
@@ -177,33 +178,33 @@ class AdvancedEncoderConfigCard(GroupHeaderCardWidget):
         # add widget to group
         self.addGroup(
             icon=Logo.ENCODER,
-            title="软件编码器",
-            content="libx264兼容性好,libx265同画质更小,VP9流媒体友好,AV1体积最小但极慢",
+            title=self.globalText.SoftwareEncoder,
+            content=self.globalText.SoftwareEncoderDesc,
             widget=self.softWareVideoCodecComboBox,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.HARDWARE,
-            title="是否使用硬件编码器",
-            content="启用后使用显卡进行硬件加速编码,速度远快于软件编码但画质略逊",
+            title=self.globalText.UseHardwareEncoder,
+            content=self.globalText.UseHardwareEncoderDesc,
             widget=self.isUseHardWareVideoCodecBtn,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.PLATFORM,
-            title="硬件编码器平台",
+            title=self.globalText.HardwarePlatform,
             content=(
-                "使用Apple VideoToolbox框架进行硬件加速编码"
+                self.globalText.HardwarePlatformMac
                 if sys.platform == "darwin"
-                else "选择显卡厂商对应的编码平台,NVIDIA为NVENC,Intel为QSV,AMD为AMF"
+                else self.globalText.HardwarePlatformDesc
             ),
             widget=self.hardWareVideoCodecPlatformComboBox,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.GPU,
-            title="硬件编码器",
-            content="选择具体硬件编码器,可用项取决于平台与显卡型号,不支持时ffmpeg会报错",
+            title=self.globalText.HardwareEncoder,
+            content=self.globalText.HardwareEncoderDesc,
             widget=self.hardWareVideoCodecComboBox,
             wordWrap=True,
         )
@@ -240,7 +241,8 @@ class AdvancedQualityConfigCard(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("质量控制")
+        self.globalText = Text()
+        self.setTitle(self.globalText.FilterQuality)
 
         self.qualityModeComboBox = ComboBox()
         self.crfLineEdit = LineEdit()
@@ -276,29 +278,29 @@ class AdvancedQualityConfigCard(GroupHeaderCardWidget):
         # add widget to group
         self.addGroup(
             icon=Logo.QUALITY_MODE,
-            title="质量控制模式",
-            content="CRF恒定质量画质优先,Bitrate目标码率控制输出体积,二选一",
+            title=self.globalText.QualityControlMode,
+            content=self.globalText.QualityControlModeDesc,
             widget=self.qualityModeComboBox,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.CRF,
-            title="CRF质量参数",
-            content="数值越低画质越高体积越大,0为无损,常用18-28",
+            title=self.globalText.CrfParam,
+            content=self.globalText.CrfParamDesc,
             widget=self.crfLineEdit,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.BITRATE,
-            title="视频目标码率",
-            content="单位kbps,仅在Bitrate模式下生效",
+            title=self.globalText.VideoTargetBitrate,
+            content=self.globalText.VideoTargetBitrateDesc,
             widget=self.videoBitrateLineEdit,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.TWO_PASS,
-            title="二次编码",
-            content="码率控制更精准但耗时翻倍,仅Bitrate模式有意义",
+            title=self.globalText.TwoPass,
+            content=self.globalText.TwoPassDesc,
             widget=self.twoPassBtn,
             wordWrap=True,
         )
@@ -319,6 +321,8 @@ class AdvancedQualityConfigCard(GroupHeaderCardWidget):
         cfg.set(cfg.ffmpegQualityMode, mode)
         self.crfLineEdit.setEnabled(mode == "CRF")
         self.videoBitrateLineEdit.setEnabled(mode == "Bitrate")
+        # two-pass 仅 Bitrate 模式有意义，CRF 模式下禁用开关（配置保留，切回 Bitrate 仍生效）
+        self.twoPassBtn.setEnabled(mode == "Bitrate")
 
 
 class AdvancedPresetConfigCard(GroupHeaderCardWidget):
@@ -326,7 +330,8 @@ class AdvancedPresetConfigCard(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("编码速度")
+        self.globalText = Text()
+        self.setTitle(self.globalText.FilterPreset)
 
         self.presetComboBox = ComboBox()
 
@@ -346,8 +351,8 @@ class AdvancedPresetConfigCard(GroupHeaderCardWidget):
         # add widget to group
         self.addGroup(
             icon=Logo.PRESET,
-            title="编码速度预设",
-            content="越慢压缩体积越小但耗时越长,medium为平衡默认",
+            title=self.globalText.EncodeSpeedPreset,
+            content=self.globalText.EncodeSpeedPresetDesc,
             widget=self.presetComboBox,
             wordWrap=True,
         )
@@ -363,7 +368,8 @@ class AdvancedResolutionConfigCard(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("分辨率")
+        self.globalText = Text()
+        self.setTitle(self.globalText.FilterResolution)
 
         self.resolutionComboBox = ComboBox()
         self.customWidthLineEdit = LineEdit()
@@ -390,15 +396,15 @@ class AdvancedResolutionConfigCard(GroupHeaderCardWidget):
         # add widget to group
         self.addGroup(
             icon=Logo.RESOLUTION,
-            title="分辨率",
-            content="origin保持原分辨率,1080p/720p/480p常用档,custom自定义宽度",
+            title=self.globalText.FilterResolution,
+            content=self.globalText.ResolutionDesc,
             widget=self.resolutionComboBox,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.CUSTOM_WIDTH,
-            title="自定义宽度",
-            content="高度按比例自动计算,需为偶数,仅在custom模式下生效",
+            title=self.globalText.CustomWidth,
+            content=self.globalText.CustomWidthDesc,
             widget=self.customWidthLineEdit,
             wordWrap=True,
         )
@@ -421,7 +427,8 @@ class AdvancedFrameRateConfigCard(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("帧率")
+        self.globalText = Text()
+        self.setTitle(self.globalText.FilterFrameRate)
 
         self.frameRateComboBox = ComboBox()
 
@@ -441,8 +448,8 @@ class AdvancedFrameRateConfigCard(GroupHeaderCardWidget):
         # add widget to group
         self.addGroup(
             icon=Logo.FRAME_RATE,
-            title="帧率",
-            content="origin保持原帧率,可固定为24/30/60",
+            title=self.globalText.FilterFrameRate,
+            content=self.globalText.FrameRateDesc,
             widget=self.frameRateComboBox,
             wordWrap=True,
         )
@@ -458,7 +465,8 @@ class AdvancedAudioConfigCard(GroupHeaderCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("音频")
+        self.globalText = Text()
+        self.setTitle(self.globalText.FilterAudio)
 
         self.audioCodecComboBox = ComboBox()
         self.audioBitrateComboBox = ComboBox()
@@ -487,22 +495,22 @@ class AdvancedAudioConfigCard(GroupHeaderCardWidget):
         # add widget to group
         self.addGroup(
             icon=Logo.AUDIO_CODEC,
-            title="音频编码器",
-            content="aac默认,libmp3lame兼容性好,libopus高质量低码率,copy不重编码",
+            title=self.globalText.AudioEncoder,
+            content=self.globalText.AudioEncoderDesc,
             widget=self.audioCodecComboBox,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.AUDIO_BITRATE,
-            title="音频码率",
-            content="128k默认,192k/320k音质更高但体积更大",
+            title=self.globalText.AudioBitrateCard,
+            content=self.globalText.AudioBitrateCardDesc,
             widget=self.audioBitrateComboBox,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.REMOVE_AUDIO,
-            title="删除音轨",
-            content="启用后不编码音频,输出视频无声音",
+            title=self.globalText.RemoveAudioTrack,
+            content=self.globalText.RemoveAudioTrackDesc,
             widget=self.removeAudioBtn,
             wordWrap=True,
         )
@@ -522,12 +530,50 @@ class AdvancedAudioConfigCard(GroupHeaderCardWidget):
         self.audioBitrateComboBox.setEnabled(not checked)
 
 
+class AdvancedImageConfigCard(GroupHeaderCardWidget):
+    """Advanced image config card"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.globalText = Text()
+        self.setTitle(self.globalText.FilterImage)
+
+        self.imageQualityComboBox = ComboBox()
+
+        self._initWidgets()
+
+    def _initWidgets(self):
+        self.setBorderRadius(8)
+
+        self.imageQualityComboBox.setMinimumWidth(120)
+        self.imageQualityComboBox.addItems(cfg.ffmpegImageQuality.options)
+        self.imageQualityComboBox.setCurrentText(cfg.get(cfg.ffmpegImageQuality))
+
+        self._initLayout()
+        self._connectSignalToSlot()
+
+    def _initLayout(self):
+        self.addGroup(
+            icon=Logo.IMAGE_QUALITY,
+            title=self.globalText.ImageQualityCard,
+            content=self.globalText.ImageQualityCardDesc,
+            widget=self.imageQualityComboBox,
+            wordWrap=True,
+        )
+
+    def _connectSignalToSlot(self):
+        self.imageQualityComboBox.currentTextChanged.connect(
+            lambda v: cfg.set(cfg.ffmpegImageQuality, v)
+        )
+
+
 class AdvancedExtraConfigCard(GroupHeaderCardWidget):
     """Advanced extra config card"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setTitle("进阶设置")
+        self.globalText = Text()
+        self.setTitle(self.globalText.FilterExtra)
 
         self.tuneComboBox = ComboBox()
         self.startTimeLineEdit = LineEdit()
@@ -545,12 +591,12 @@ class AdvancedExtraConfigCard(GroupHeaderCardWidget):
         self.tuneComboBox.setCurrentText(cfg.get(cfg.ffmpegTune))
 
         self.startTimeLineEdit.setFixedWidth(120)
-        self.startTimeLineEdit.setPlaceholderText("秒")
+        self.startTimeLineEdit.setPlaceholderText(self.globalText.Seconds)
         self.startTimeLineEdit.setValidator(QDoubleValidator(0, 2147483647, 2))
         self.startTimeLineEdit.setText(str(cfg.get(cfg.ffmpegStartTime)))
 
         self.durationLineEdit.setFixedWidth(120)
-        self.durationLineEdit.setPlaceholderText("秒")
+        self.durationLineEdit.setPlaceholderText(self.globalText.Seconds)
         self.durationLineEdit.setValidator(QDoubleValidator(0, 2147483647, 2))
         self.durationLineEdit.setText(str(cfg.get(cfg.ffmpegDuration)))
 
@@ -567,36 +613,36 @@ class AdvancedExtraConfigCard(GroupHeaderCardWidget):
         # add widget to group
         self.addGroup(
             icon=Logo.TUNE,
-            title="调优",
-            content="针对内容类型优化编码,仅libx264/libx265生效",
+            title=self.globalText.Tune,
+            content=self.globalText.TuneDesc,
             widget=self.tuneComboBox,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.START_TIME,
-            title="裁剪起始时间",
-            content="单位秒,留空表示从头开始",
+            title=self.globalText.CutStartTime,
+            content=self.globalText.CutStartTimeDesc,
             widget=self.startTimeLineEdit,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.DURATION,
-            title="裁剪持续时间",
-            content="单位秒,留空表示到结尾",
+            title=self.globalText.CutDuration,
+            content=self.globalText.CutDurationDesc,
             widget=self.durationLineEdit,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.DEINTERLACE,
-            title="反交错",
-            content="消除隔行扫描产生的横纹,适合老式DVD源",
+            title=self.globalText.Deinterlace,
+            content=self.globalText.DeinterlaceDesc,
             widget=self.deinterlaceBtn,
             wordWrap=True,
         )
         self.addGroup(
             icon=Logo.ROTATION,
-            title="旋转角度",
-            content="none不旋转,90/180/270逆时针旋转",
+            title=self.globalText.Rotation,
+            content=self.globalText.RotationDesc,
             widget=self.rotationComboBox,
             wordWrap=True,
         )
@@ -628,12 +674,15 @@ class CustomArgsConfigCard(SimpleCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.globalText = Text()
         self.vBoxlayout = QVBoxLayout(self)
 
-        self.videoArgsLabel = BodyLabel("视频参数:")
+        self.videoArgsLabel = BodyLabel(self.globalText.VideoArgs)
         self.videoArgsEdit = PlainTextEdit()
-        self.audioArgsLabel = BodyLabel("音频参数:")
+        self.audioArgsLabel = BodyLabel(self.globalText.AudioArgs)
         self.audioArgsEdit = PlainTextEdit()
+        self.imageArgsLabel = BodyLabel(self.globalText.ImageArgs)
+        self.imageArgsEdit = PlainTextEdit()
 
         self._initWidgets()
 
@@ -644,10 +693,15 @@ class CustomArgsConfigCard(SimpleCardWidget):
         self.audioArgsEdit.setMaximumHeight(100)
         self.audioArgsEdit.setPlainText(cfg.get(cfg.ffmpegCustomAudioArgs))
 
+        self.imageArgsEdit.setMaximumHeight(100)
+        self.imageArgsEdit.setPlainText(cfg.get(cfg.ffmpegCustomImageArgs))
+
         self.vBoxlayout.addWidget(self.videoArgsLabel)
         self.vBoxlayout.addWidget(self.videoArgsEdit)
         self.vBoxlayout.addWidget(self.audioArgsLabel)
         self.vBoxlayout.addWidget(self.audioArgsEdit)
+        self.vBoxlayout.addWidget(self.imageArgsLabel)
+        self.vBoxlayout.addWidget(self.imageArgsEdit)
 
         self._connectSignalToSlot()
 
@@ -657,6 +711,9 @@ class CustomArgsConfigCard(SimpleCardWidget):
         )
         self.audioArgsEdit.textChanged.connect(
             lambda: cfg.set(cfg.ffmpegCustomAudioArgs, self.audioArgsEdit.toPlainText())
+        )
+        self.imageArgsEdit.textChanged.connect(
+            lambda: cfg.set(cfg.ffmpegCustomImageArgs, self.imageArgsEdit.toPlainText())
         )
 
 
@@ -675,6 +732,7 @@ class ConfigFilterCard(SimpleCardWidget):
             "resolution": "FilterResolution",
             "frame_rate": "FilterFrameRate",
             "audio": "FilterAudio",
+            "image": "FilterImage",
             "extra": "FilterExtra",
         }
 

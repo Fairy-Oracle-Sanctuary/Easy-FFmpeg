@@ -47,7 +47,7 @@ def safeRemoveFile(filePath) -> bool:
 
 
 def classifyMediaPaths(paths, recursive=False):
-    """将路径列表分类为视频集合和音频集合
+    """将路径列表分类为视频集合、音频集合和图片集合
 
     Parameters
     ----------
@@ -58,32 +58,41 @@ def classifyMediaPaths(paths, recursive=False):
 
     Returns
     -------
-    tuple[set[Path], set[Path]]
-        (视频文件集合, 音频文件集合)
+    tuple[set[Path], set[Path], set[Path]]
+        (视频文件集合, 音频文件集合, 图片文件集合)
     """
-    from .setting import AUDIO_CONTAINERS, VIDEO_CONTAINERS
+    from .setting import AUDIO_CONTAINERS, IMAGE_CONTAINERS, VIDEO_CONTAINERS
 
     video_set = set()
     audio_set = set()
+    image_set = set()
 
     for path_str in paths:
         path = Path(path_str)
         if not path.exists():
             continue
         if path.is_file():
-            if path.suffix.lower() in VIDEO_CONTAINERS:
+            suffix = path.suffix.lower()
+            if suffix in VIDEO_CONTAINERS:
                 video_set.add(path)
-            elif path.suffix.lower() in AUDIO_CONTAINERS:
+            elif suffix in AUDIO_CONTAINERS:
                 audio_set.add(path)
+            elif suffix in IMAGE_CONTAINERS:
+                image_set.add(path)
         elif path.is_dir():
             iterator = path.rglob("*") if recursive else path.iterdir()
             for item in iterator:
-                if item.is_file() and item.suffix.lower() in VIDEO_CONTAINERS:
+                if not item.is_file():
+                    continue
+                suffix = item.suffix.lower()
+                if suffix in VIDEO_CONTAINERS:
                     video_set.add(item)
-                elif item.is_file() and item.suffix.lower() in AUDIO_CONTAINERS:
+                elif suffix in AUDIO_CONTAINERS:
                     audio_set.add(item)
+                elif suffix in IMAGE_CONTAINERS:
+                    image_set.add(item)
 
-    return video_set, audio_set
+    return video_set, audio_set, image_set
 
 
 class DeleteFileWorker(QRunnable):

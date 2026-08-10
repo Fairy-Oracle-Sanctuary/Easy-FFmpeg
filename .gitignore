@@ -224,3 +224,4 @@ tools/
 test.py
 Output/
 .DS_Store
+scripts/

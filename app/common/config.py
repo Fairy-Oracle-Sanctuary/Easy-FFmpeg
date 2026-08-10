@@ -26,10 +26,84 @@ def isWin11():
 
 
 class Language(Enum):
-    """Language enumeration"""
+    """Language enumeration（与 libs/qfluentwidgets_pro 支持的语言对齐）"""
 
-    CHINESE_SIMPLIFIED = QLocale(QLocale.Chinese, QLocale.China)
-    ENGLISH = QLocale(QLocale.English)
+    CHINESE_SIMPLIFIED = QLocale("zh_CN")
+    CHINESE_TRADITIONAL = QLocale("zh_TW")
+    ENGLISH = QLocale("en_US")
+    JAPANESE = QLocale("ja_JP")
+    KOREAN = QLocale("ko_KR")
+    FRENCH = QLocale("fr_FR")
+    GERMAN = QLocale("de_DE")
+    SPANISH = QLocale("es_ES")
+    PORTUGUESE = QLocale("pt_BR")
+    RUSSIAN = QLocale("ru_RU")
+    ITALIAN = QLocale("it_IT")
+    DUTCH = QLocale("nl_NL")
+    POLISH = QLocale("pl_PL")
+    TURKISH = QLocale("tr_TR")
+    VIETNAMESE = QLocale("vi_VN")
+    THAI = QLocale("th_TH")
+    INDONESIAN = QLocale("id_ID")
+    HINDI = QLocale("hi_IN")
+    ARABIC = QLocale("ar_EG")
+    AFRIKAANS = QLocale("af_ZA")
+    AMHARIC = QLocale("am_ET")
+    AZERBAIJANI = QLocale("az_AZ")
+    BELARUSIAN = QLocale("be_BY")
+    BULGARIAN = QLocale("bg_BG")
+    BENGALI = QLocale("bn_BD")
+    BOSNIAN = QLocale("bs_BA")
+    CATALAN = QLocale("ca_ES")
+    CZECH = QLocale("cs_CZ")
+    WELSH = QLocale("cy_GB")
+    DANISH = QLocale("da_DK")
+    GREEK = QLocale("el_GR")
+    ESTONIAN = QLocale("et_EE")
+    BASQUE = QLocale("eu_ES")
+    PERSIAN = QLocale("fa_IR")
+    FINNISH = QLocale("fi_FI")
+    IRISH = QLocale("ga_IE")
+    GALICIAN = QLocale("gl_ES")
+    GUJARATI = QLocale("gu_IN")
+    HEBREW = QLocale("he_IL")
+    CROATIAN = QLocale("hr_HR")
+    HUNGARIAN = QLocale("hu_HU")
+    ARMENIAN = QLocale("hy_AM")
+    ICELANDIC = QLocale("is_IS")
+    GEORGIAN = QLocale("ka_GE")
+    KAZAKH = QLocale("kk_KZ")
+    KHMER = QLocale("km_KH")
+    KANNADA = QLocale("kn_IN")
+    LITHUANIAN = QLocale("lt_LT")
+    LATVIAN = QLocale("lv_LV")
+    MACEDONIAN = QLocale("mk_MK")
+    MALAYALAM = QLocale("ml_IN")
+    MONGOLIAN = QLocale("mn_MN")
+    MARATHI = QLocale("mr_IN")
+    MALAY = QLocale("ms_MY")
+    BURMESE = QLocale("my_MM")
+    NORWEGIAN_BOKMAL = QLocale("nb_NO")
+    NEPALI = QLocale("ne_NP")
+    NORWEGIAN_NYNORSK = QLocale("nn_NO")
+    PUNJABI = QLocale("pa_IN")
+    PORTUGUESE_EUROPEAN = QLocale("pt_PT")
+    ROMANIAN = QLocale("ro_RO")
+    SINHALA = QLocale("si_LK")
+    SLOVAK = QLocale("sk_SK")
+    SLOVENIAN = QLocale("sl_SI")
+    ALBANIAN = QLocale("sq_AL")
+    SERBIAN = QLocale("sr_RS")
+    SWEDISH = QLocale("sv_SE")
+    SWAHILI = QLocale("sw_KE")
+    TAMIL = QLocale("ta_IN")
+    TELUGU = QLocale("te_IN")
+    TAJIK = QLocale("tg_TJ")
+    TAGALOG = QLocale("fil_PH")
+    UKRAINIAN = QLocale("uk_UA")
+    URDU = QLocale("ur_PK")
+    UZBEK = QLocale("uz_UZ")
+    CHINESE_HONGKONG = QLocale("zh_HK")
     AUTO = QLocale()
 
 
@@ -111,7 +185,7 @@ class Config(QConfig):
     language = OptionsConfigItem(
         "MainWindow",
         "Language",
-        Language.CHINESE_SIMPLIFIED,
+        Language.AUTO,
         OptionsValidator(Language),
         LanguageSerializer(),
         restart=True,
@@ -170,11 +244,28 @@ class Config(QConfig):
         restart=False,
     )
 
+    # 自定义图片压制参数
+    ffmpegCustomImageArgs = ConfigItem(
+        "FFmpeg",
+        "CustomImageArgs",
+        "ffmpeg -i {{input_file}} -q:v 5 {{output_file}} -y",
+        restart=False,
+    )
+
     # 启用的参数块（过滤器选择状态），存储为逗号分隔的标识符
     ffmpegEnabledBlocks = ConfigItem(
         "FFmpeg",
         "EnabledBlocks",
-        ["encoder", "quality", "preset", "resolution", "frame_rate", "audio", "extra"],
+        [
+            "encoder",
+            "quality",
+            "preset",
+            "resolution",
+            "frame_rate",
+            "audio",
+            "image",
+            "extra",
+        ],
         serializer=StringListSerializer(),
         restart=False,
     )
@@ -182,6 +273,13 @@ class Config(QConfig):
     # 并发数量，同时压制多个视频时的最大并行数
     ffmpegConcurrentEncodes = RangeConfigItem(
         "FFmpeg", "ConcurrentEncodes", 2, RangeValidator(1, 3), restart=False
+    )
+
+    # 任务重试时是否使用当前高级设置重建参数
+    # 开启：重试按当前配置重新构建 args
+    # 关闭：使用添加任务时固化的参数
+    retryUseCurrentSettings = ConfigItem(
+        "FFmpeg", "RetryUseCurrentSettings", True, BoolValidator(), restart=False
     )
 
     # 软件编码器
@@ -291,8 +389,8 @@ class Config(QConfig):
     ffmpegAudioCodec = OptionsConfigItem(
         "FFmpeg",
         "AudioCodec",
-        "aac",
-        OptionsValidator(["aac", "libmp3lame", "libopus", "copy"]),
+        "libmp3lame",
+        OptionsValidator(["libmp3lame", "aac", "libopus", "copy"]),
         restart=False,
     )
     # 音频码率
@@ -306,6 +404,15 @@ class Config(QConfig):
     # 删除音轨
     ffmpegRemoveAudio = ConfigItem(
         "FFmpeg", "RemoveAudio", False, BoolValidator(), restart=False
+    )
+
+    # 图片质量（-q:v，数值越小质量越高，仅对 jpeg/webp 等有损格式生效）
+    ffmpegImageQuality = OptionsConfigItem(
+        "FFmpeg",
+        "ImageQuality",
+        "5",
+        OptionsValidator(["2", "5", "10", "15"]),
+        restart=False,
     )
 
     # 进阶：tune 调优（仅 libx264/libx265 生效）
@@ -333,7 +440,125 @@ class Config(QConfig):
         restart=False,
     )
 
+    # 工具页：音频提取格式（按格式标识持久化，与 _FORMATS 顺序解耦）
+    toolAudioExtractFormat = OptionsConfigItem(
+        "Tool",
+        "AudioExtractFormat",
+        "MP3",
+        OptionsValidator(["MP3", "AAC", "WAV", "OPUS", "VORBIS", "FLAC"]),
+        restart=False,
+    )
+    # 工具页：音频提取码率（留空=默认，仅对有损格式生效）
+    toolAudioExtractBitrate = ConfigItem(
+        "Tool", "AudioExtractBitrate", "", restart=False
+    )
+
+    # 工具页：视频截图（时间点留空=截首帧）
+    toolVideoSnapshotTime = ConfigItem("Tool", "VideoSnapshotTime", "", restart=False)
+    toolVideoSnapshotFormat = OptionsConfigItem(
+        "Tool",
+        "VideoSnapshotFormat",
+        "PNG",
+        OptionsValidator(["PNG", "JPG", "WEBP"]),
+        restart=False,
+    )
+
+    # 工具页：GIF 制作
+    toolGifMakeStart = ConfigItem("Tool", "GifMakeStart", "", restart=False)
+    toolGifMakeDuration = ConfigItem("Tool", "GifMakeDuration", "", restart=False)
+    toolGifMakeWidth = OptionsConfigItem(
+        "Tool",
+        "GifMakeWidth",
+        "480",
+        OptionsValidator(["480", "640", "320", "origin"]),
+        restart=False,
+    )
+    toolGifMakeFps = OptionsConfigItem(
+        "Tool",
+        "GifMakeFps",
+        15,
+        OptionsValidator([10, 15, 20, 24]),
+        restart=False,
+    )
+
+    # 工具页：视频剪切
+    toolVideoCutStart = ConfigItem("Tool", "VideoCutStart", "", restart=False)
+    toolVideoCutDuration = ConfigItem("Tool", "VideoCutDuration", "", restart=False)
+    toolVideoCutMode = OptionsConfigItem(
+        "Tool",
+        "VideoCutMode",
+        "copy",
+        OptionsValidator(["copy", "accurate"]),
+        restart=False,
+    )
+
+    # 工具页：音视频格式转换
+    toolMediaConvertPreset = OptionsConfigItem(
+        "Tool",
+        "MediaConvertPreset",
+        "MP4_H264",
+        OptionsValidator(["MP4_H264", "MP4_H265", "MKV_H264", "WEBM_VP9", "MOV_H264"]),
+        restart=False,
+    )
+
+    # 工具页：图片格式转换
+    toolImageConvertFormat = OptionsConfigItem(
+        "Tool",
+        "ImageConvertFormat",
+        "JPG",
+        OptionsValidator(["JPG", "PNG", "WEBP", "BMP"]),
+        restart=False,
+    )
+    toolImageConvertQuality = ConfigItem(
+        "Tool", "ImageConvertQuality", "", restart=False
+    )
+
+    # 工具页：视频拼接
+    toolVideoConcatMode = OptionsConfigItem(
+        "Tool",
+        "VideoConcatMode",
+        "av",
+        OptionsValidator(["av", "video"]),
+        restart=False,
+    )
+
+    # 工具页：字幕处理
+    toolSubtitleMode = OptionsConfigItem(
+        "Tool",
+        "SubtitleMode",
+        "extract",
+        OptionsValidator(["extract", "burn", "embed", "convert"]),
+        restart=False,
+    )
+    toolSubtitleConvertFormat = OptionsConfigItem(
+        "Tool",
+        "SubtitleConvertFormat",
+        "SRT",
+        OptionsValidator(["SRT", "ASS", "VTT"]),
+        restart=False,
+    )
+
+    # 工具页：音量归一化
+    toolLoudnormMode = OptionsConfigItem(
+        "Tool",
+        "LoudnormMode",
+        "loudnorm",
+        OptionsValidator(["loudnorm", "dynaudnorm"]),
+        restart=False,
+    )
+    toolLoudnormTarget = ConfigItem("Tool", "LoudnormTarget", "-16", restart=False)
+
+    # 工具页：速度调整
+    toolSpeedFactor = ConfigItem("Tool", "SpeedFactor", "2.0", restart=False)
+    toolSpeedMode = OptionsConfigItem(
+        "Tool",
+        "SpeedMode",
+        "av",
+        OptionsValidator(["av", "video", "audio"]),
+        restart=False,
+    )
+
 
 cfg = Config()
-cfg.themeMode.value = Theme.LIGHT
+cfg.themeMode.value = Theme.AUTO
 qconfig.load(str(CONFIG_FILE.absolute()), cfg)

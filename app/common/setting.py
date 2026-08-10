@@ -4,9 +4,9 @@ from pathlib import Path
 
 AUTHOR = "baby2016"
 TEAM = "天机阁(Fairy-Oracle-Sanctuary)"
-VERSION = "0.6.0"
+VERSION = "1.0.0"
 YEAR = "2026"
-UPDATE_TIME = "2026-8-8"
+UPDATE_TIME = "2026-8-15"
 if sys.platform == "win32":
     COPYLEFT = "🄯 "
 else:
@@ -17,6 +17,10 @@ GITHUB_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
 FEEDBACK_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/issues"
 OFFICIAL_WEBSITE = ""
 FFMPEG_WEBSITE = "https://ffmpeg.org/"
+
+# 是否为微软商店版本（商店版不允许内置下载安装包功能，只能跳转浏览器）
+IS_MS_STORE_VERSION = False
+MS_STORE_URL = ""
 
 # 统一放用户目录，避免权限问题和路径漂移
 if sys.platform == "win32":
@@ -110,5 +114,54 @@ AUDIO_CONTAINERS = {
     ".snd",
 }
 
+IMAGE_CONTAINERS = {
+    # 主流格式
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".bmp",
+    ".tiff",
+    ".tif",
+    # 现代/高效格式（依赖 ffmpeg 编译支持）
+    ".heic",
+    ".heif",
+    ".avif",
+    # 其他常见
+    ".ico",
+    ".tga",
+    ".psd",
+    ".ppm",
+    ".pgm",
+    ".pbm",
+    ".pnm",
+    ".pcx",
+}
+
+SUBTITLE_CONTAINERS = {
+    ".srt",
+    ".ass",
+    ".ssa",
+    ".vtt",
+    ".sub",
+    ".sup",
+    ".lrc",
+}
+
+
+def buildFileFilter(name: str, containers: set) -> str:
+    """构建 QFileDialog 文件过滤器字符串
+
+    Parameters
+    ----------
+    name : str
+        过滤器显示名，如 "视频文件"
+    containers : set
+        容器扩展名集合（元素带前导点，如 ".mp4"），如 VIDEO_CONTAINERS
+    """
+    exts = " ".join(f"*{e}" for e in sorted(containers))
+    return f"{name} ({exts})"
+
+
 if __name__ == "__main__":
-    print(VIDEO_CONTAINERS | AUDIO_CONTAINERS)
+    print(VIDEO_CONTAINERS | AUDIO_CONTAINERS | IMAGE_CONTAINERS)
