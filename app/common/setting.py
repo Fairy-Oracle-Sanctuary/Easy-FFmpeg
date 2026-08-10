@@ -15,7 +15,7 @@ else:
 RELEASE_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases"
 GITHUB_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg"
 FEEDBACK_URL = "https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/issues"
-OFFICIAL_WEBSITE = ""
+OFFICIAL_WEBSITE = "https://easypeg.ora-san.org/"
 FFMPEG_WEBSITE = "https://ffmpeg.org/"
 
 # 是否为微软商店版本（商店版不允许内置下载安装包功能，只能跳转浏览器）

@@ -7,7 +7,7 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg">GitHub Repository</a> · <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases">Download Releases</a>
+  <a href="https://easypeg.ora-san.org/">Official Website</a> · <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg">GitHub Repository</a> · <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases">Download Releases</a>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
   </a>
 
   <a style="text-decoration:none">
-    <img src="https://img.shields.io/badge/Version-0.5.0-purple" alt="Version 0.5.0"/>
+    <img src="https://img.shields.io/badge/Version-1.0.0-purple" alt="Version 1.0.0"/>
   </a>
 
   <a style="text-decoration:none">
@@ -36,7 +36,7 @@
   </a>
 
   <a style="text-decoration:none">
-    <img src="https://img.shields.io/badge/UI-PySide6%20%2B%20QFluentWidgets-cyan" alt="UI PySide6 + QFluentWidgets"/>
+    <img src="https://img.shields.io/badge/UI-PySide6%20%2B%20QFluentWidgets_Pro-cyan" alt="UI PySide6 + QFluentWidgets_Pro"/>
   </a>
 </p>
 
