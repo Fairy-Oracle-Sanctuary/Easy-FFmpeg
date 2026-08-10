@@ -50,6 +50,7 @@ class ExeDetectThread(QThread):
                 capture_output=True,
                 timeout=10,
                 check=False,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
             print(result.stdout.decode("utf-8"))
             print(result.stderr.decode("utf-8"))

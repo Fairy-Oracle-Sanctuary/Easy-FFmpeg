@@ -42,7 +42,7 @@ from ..common.setting import (
     FFMPEG_WEBSITE,
     GITHUB_URL,
     IS_MS_STORE_VERSION,
-    RELEASE_URL,
+    MS_STORE_URL,
     VIDEO_CONTAINERS,
 )
 from ..common.utils import openUrl
@@ -109,7 +109,7 @@ class UpdateDialog(MessageBoxBase):
             return  # 下载进行中，忽略点击
 
         if IS_MS_STORE_VERSION:
-            QDesktopServices.openUrl(QUrl(RELEASE_URL))
+            QDesktopServices.openUrl(QUrl(MS_STORE_URL))
             super().accept()
             return
 

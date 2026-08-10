@@ -18,7 +18,7 @@ from libs.qfluentwidgets_pro import (
     qconfig,
 )
 
-from .setting import CONFIG_FILE, EXE_SUFFIX
+from .setting import CONFIG_FILE, EXE_SUFFIX, IS_MS_STORE_VERSION
 
 
 def isWin11():
@@ -137,6 +137,9 @@ def get_default_exe_path(exe_name: str) -> str:
     """获取可执行文件的默认路径，根据操作系统返回不同路径"""
     # Windows: 使用 tools 目录
     if sys.platform == "win32":
+        if IS_MS_STORE_VERSION and getattr(sys, "frozen", False) or "__compiled__" in globals():
+            # MSIX 打包后：CWD 为 C:\Windows\system32，需基于 sys.executable 定位
+            return str(Path(sys.executable).parent / "tools" / f"{exe_name}{EXE_SUFFIX}")
         return str(Path(f"tools/{exe_name}{EXE_SUFFIX}").absolute())
 
     # macOS: 优先使用打包后的app目录下的tools目录
@@ -562,3 +565,7 @@ class Config(QConfig):
 cfg = Config()
 cfg.themeMode.value = Theme.AUTO
 qconfig.load(str(CONFIG_FILE.absolute()), cfg)
+
+# MSIX 环境下旧配置可能指向不存在的路径，启动时自动修正
+if IS_MS_STORE_VERSION and not Path(cfg.get(cfg.ffmpegPath)).exists():
+    cfg.set(cfg.ffmpegPath, get_default_exe_path("ffmpeg"))
