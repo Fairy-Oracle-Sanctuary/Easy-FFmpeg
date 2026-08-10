@@ -15,5 +15,45 @@
         <file>images/logo/Face09.svg</file>
         <file>images/logo/Face10.svg</file>
 
+        <file>images/logo/Alarm-clock.svg</file>
+        <file>images/logo/Bar-chart.svg</file>
+        <file>images/logo/Control-knobs.svg</file>
+        <file>images/logo/Curly-loop.svg</file>
+        <file>images/logo/Factory.svg</file>
+        <file>images/logo/Film-frames.svg</file>
+        <file>images/logo/Gear.svg</file>
+        <file>images/logo/High-voltage.svg</file>
+        <file>images/logo/Input-numbers.svg</file>
+        <file>images/logo/Loudspeaker.svg</file>
+        <file>images/logo/Magic-wand.svg</file>
+        <file>images/logo/Musical-note.svg</file>
+        <file>images/logo/Muted-speaker.svg</file>
+        <file>images/logo/Repeat-button.svg</file>
+        <file>images/logo/Rocket.svg</file>
+        <file>images/logo/Star.svg</file>
+        <file>images/logo/Stopwatch.svg</file>
+        <file>images/logo/Television.svg</file>
+        <file>images/logo/Timer-clock.svg</file>
+        <file>images/logo/Wavy-dash.svg</file>
+
+        <file>i18n/app.en_US.qm</file>
+        <file>i18n/app.ja_JP.qm</file>
+        <file>i18n/app.ko_KR.qm</file>
+        <file>i18n/app.zh_TW.qm</file>
+        <file>i18n/app.fr_FR.qm</file>
+        <file>i18n/app.de_DE.qm</file>
+        <file>i18n/app.es_ES.qm</file>
+        <file>i18n/app.pt_BR.qm</file>
+        <file>i18n/app.ru_RU.qm</file>
+        <file>i18n/app.it_IT.qm</file>
+        <file>i18n/app.nl_NL.qm</file>
+        <file>i18n/app.pl_PL.qm</file>
+        <file>i18n/app.tr_TR.qm</file>
+        <file>i18n/app.vi_VN.qm</file>
+        <file>i18n/app.th_TH.qm</file>
+        <file>i18n/app.id_ID.qm</file>
+        <file>i18n/app.hi_IN.qm</file>
+        <file>i18n/app.ar_EG.qm</file>
+
     </qresource>
 </RCC>

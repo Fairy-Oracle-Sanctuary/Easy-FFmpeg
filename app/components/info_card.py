@@ -10,6 +10,7 @@ from libs.qfluentwidgets_pro import (
     FluentIcon,
     HyperlinkLabel,
     ImageLabel,
+    InfoBadge,
     LuminaPushButton,
     MessageBox,
     PrimaryPushButton,
@@ -35,6 +36,7 @@ from ..common.text import Text
 from ..common.utils import safeRemoveFile
 from .statistic_widget import StatisticsWidget
 
+
 class EasyFFmpegInfoCard(SimpleCardWidget):
     """Easy FFmpeg information card"""
 
@@ -47,34 +49,36 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         )
 
         self.nameLabel = TitleLabel("Easy FFmpeg", self)
-        self.updateButton = PrimaryPushButton("更新", self)
+        self.updateButton = PrimaryPushButton(self.globalText.Update, self)
         self.companyLabel = HyperlinkLabel(
             QUrl("https://space.bilibili.com/499929312"),
             "Baby2016",
             self,
         )
 
-        self.versionWidget = StatisticsWidget("版本", f"v{VERSION}", self)
-        self.updateTimeWidget = StatisticsWidget("更新时间", UPDATE_TIME, self)
+        self.versionWidget = StatisticsWidget(
+            self.globalText.Version, "v" + VERSION, self
+        )
+        self.updateTimeWidget = StatisticsWidget(
+            self.globalText.UpdateTime, UPDATE_TIME, self
+        )
         self.logSizeWidget = StatisticsWidget(
-            "日志占用", self._formatLogSize(self._getLogSize()), self
+            self.globalText.LogUsage, self._formatLogSize(self._getLogSize()), self
         )
 
-        self.descriptionLabel = BodyLabel(
-            "Easy FFmpeg 是一个基于 FFmpeg 的视频处理工具，用于批量处理视频文件，操作简单易用。",
-            self,
-        )
+        self.descriptionLabel = BodyLabel(self.globalText.AppDescription, self)
 
         self.ffmpegButton = LuminaPushButton(Logo.FFMPEG, "FFmpeg")
+        self.testButton = PrimaryPushButton(self.globalText.Test)
 
         self.clearffmpegButton = TransparentToolButton(FluentIcon.DELETE, self)
-        self.clearffmpegButton.setToolTip("清理日志文件")
+        self.clearffmpegButton.setToolTip(self.globalText.ClearLogsToolTip)
         self.resetButton = TransparentToolButton(FluentIcon.SYNC, self)
-        self.resetButton.setToolTip("重置设置并重启")
+        self.resetButton.setToolTip(self.globalText.ResetSettingsToolTip)
         self.websiteButton = TransparentToolButton(FluentIcon.GLOBE, self)
-        self.websiteButton.setToolTip("软件官网")
+        self.websiteButton.setToolTip(self.globalText.WebsiteToolTip)
         self.githubButton = TransparentToolButton(FluentIcon.GITHUB, self)
-        self.githubButton.setToolTip("GitHub 仓库")
+        self.githubButton.setToolTip(self.globalText.GitHubToolTip)
 
         self.hBoxLayout = QHBoxLayout(self)
         self.vBoxLayout = QVBoxLayout()
@@ -155,6 +159,7 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         self.buttonLayout.setContentsMargins(0, 0, 0, 0)
         self.vBoxLayout.addLayout(self.buttonLayout)
         self.buttonLayout.addWidget(self.ffmpegButton, 0, Qt.AlignLeft)
+        # self.buttonLayout.addWidget(self.testButton, 0, Qt.AlignLeft)
         self.buttonLayout.addStretch(1)
         self.buttonLayout.addWidget(self.clearffmpegButton, 0, Qt.AlignRight)
         self.buttonLayout.addWidget(self.resetButton, 0, Qt.AlignRight)
@@ -177,14 +182,31 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         event_bus.checkUpdateStateChanged.connect(
             lambda busy: (
                 self.updateButton.setEnabled(not busy),
-                self.updateButton.setText(self.globalText.Checking if busy else "更新"),
+                self.updateButton.setText(
+                    self.globalText.Checking if busy else self.globalText.Update
+                ),
             )
         )
+        # 新版本检测到时在更新按钮上显示版本号徽标
+        self.updateBadge = InfoBadge.error("", parent=self, target=self.updateButton)
+        self.updateBadge.hide()
+        event_bus.newVersionDetected.connect(self._onNewVersionDetected)
         # 任务失败或应用出错时会写入日志，刷新日志占用大小
         event_bus.finishTaskSig.connect(
             lambda _id, ok, _log: self._refreshLogSize() if not ok else None
         )
         event_bus.appErrorSig.connect(lambda _msg: self._refreshLogSize())
+
+    def _onNewVersionDetected(self, version: str):
+        """新版本检测到时在更新按钮上显示版本号徽标"""
+        if version:
+            self.updateBadge.setText(version)
+            self.updateBadge.setFixedSize(self.updateBadge.sizeHint())
+            if self.updateBadge.manager:
+                self.updateBadge.move(self.updateBadge.manager.position())
+            self.updateBadge.show()
+        else:
+            self.updateBadge.hide()
 
     def _getLogSize(self) -> int:
         """计算 LOG_FOLDER 下所有 .log 文件的总大小（字节）"""
@@ -210,8 +232,8 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         """清空所有日志文件"""
         size_str = self._formatLogSize(self._getLogSize())
         w = MessageBox(
-            "清理日志",
-            f"确定要清空所有日志文件吗？当前占用 {size_str}，此操作不可撤销。",
+            self.globalText.ClearLogs,
+            self.globalText.ClearLogsConfirm.format(size_str),
             self.window(),
         )
         if not w.exec():
@@ -237,16 +259,16 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
         # 刷新日志占用大小显示
         self._refreshLogSize()
 
-        msg = f"已清理 {cleared} 个日志文件"
+        msg = self.globalText.LogsCleared.format(cleared)
         if failed:
-            msg += f"，{failed} 个被占用跳过"
-        event_bus.notification_service.show_success("完成", msg)
+            msg += self.globalText.LogsSkipped.format(failed)
+        event_bus.notification_service.show_success(self.globalText.Done, msg)
 
     def __onResetClicked(self):
         """重置所有设置并重启"""
         w = MessageBox(
-            "重置设置",
-            "确定要重置所有设置并重启应用吗？此操作不可撤销。",
+            self.globalText.ResetSettings,
+            self.globalText.ResetSettingsConfirm,
             self.window(),
         )
         if not w.exec():
@@ -272,7 +294,10 @@ class EasyFFmpegInfoCard(SimpleCardWidget):
                     pass
 
             # 等待版本检查线程结束，避免 QThread 销毁时仍在运行导致崩溃
-            if hasattr(main_window, "_versionThread") and main_window._versionThread is not None:
+            if (
+                hasattr(main_window, "_versionThread")
+                and main_window._versionThread is not None
+            ):
                 thread = main_window._versionThread
                 if thread.isRunning():
                     thread.terminate()

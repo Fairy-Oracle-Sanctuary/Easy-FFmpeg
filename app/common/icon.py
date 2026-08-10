@@ -36,6 +36,7 @@ class Logo(FluentIconBase, Enum):
     AUDIO_CODEC = "Musical-note"
     AUDIO_BITRATE = "Loudspeaker"
     REMOVE_AUDIO = "Muted-speaker"
+    IMAGE_QUALITY = "Star"
     TUNE = "Magic-wand"
     START_TIME = "Alarm-clock"
     DURATION = "Timer-clock"

@@ -1,6 +1,3 @@
-# from ..common.signal_bus import signalBus
-# from ..common.icon import Logo
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QStackedWidget, QVBoxLayout, QWidget
 
@@ -14,6 +11,7 @@ from ..components.config_card import (
     AdvancedEncoderConfigCard,
     AdvancedExtraConfigCard,
     AdvancedFrameRateConfigCard,
+    AdvancedImageConfigCard,
     AdvancedPresetConfigCard,
     AdvancedQualityConfigCard,
     AdvancedResolutionConfigCard,
@@ -35,8 +33,8 @@ class AdvanceInterface(ScrollArea):
         self.infoCard = EasyFFmpegInfoCard(self)
         self.isUseCustomArgsCard = SwitchSettingCard(
             FIF.PENCIL_INK,
-            "是否使用自定义参数",
-            "自定义ffmpeg参数，软件默认使用默认参数里的配置",
+            self.globalText.UseCustomArgs,
+            self.globalText.UseCustomArgsDesc,
             cfg.ffmpegIsUseCustomArgs,
         )
 
@@ -46,6 +44,7 @@ class AdvanceInterface(ScrollArea):
         self.resolutionConfigCard = AdvancedResolutionConfigCard(self)
         self.frameRateConfigCard = AdvancedFrameRateConfigCard(self)
         self.audioConfigCard = AdvancedAudioConfigCard(self)
+        self.imageConfigCard = AdvancedImageConfigCard(self)
         self.extraConfigCard = AdvancedExtraConfigCard(self)
         self.customArgsConfigCard = CustomArgsConfigCard(self)
 
@@ -70,6 +69,7 @@ class AdvanceInterface(ScrollArea):
             "resolution": self.resolutionConfigCard,
             "frame_rate": self.frameRateConfigCard,
             "audio": self.audioConfigCard,
+            "image": self.imageConfigCard,
             "extra": self.extraConfigCard,
         }
 
@@ -115,6 +115,9 @@ class AdvanceInterface(ScrollArea):
         )
         self.advancedConfigLayout.addWidget(
             self.audioConfigCard, 0, Qt.AlignmentFlag.AlignTop
+        )
+        self.advancedConfigLayout.addWidget(
+            self.imageConfigCard, 0, Qt.AlignmentFlag.AlignTop
         )
         self.advancedConfigLayout.addWidget(
             self.extraConfigCard, 0, Qt.AlignmentFlag.AlignTop

@@ -25,6 +25,7 @@ from libs.qfluentwidgets_pro import (
 
 from ..common.event_bus import event_bus
 from ..common.task_status import TaskStatus
+from ..common.text import Text
 from ..common.utils import openUrl, showInFolder
 from ..service.ffmpeg_service import FFmpegTask
 
@@ -106,6 +107,7 @@ class FFmpegTaskCard(TaskCardBase):
 
     def __init__(self, task: FFmpegTask, parent=None):
         super().__init__(parent=parent)
+        self.globalText = Text()
         self.hBoxLayout = QHBoxLayout(self)
         self.vBoxLayout = QVBoxLayout()
         self.infoLayout = QHBoxLayout()
@@ -114,14 +116,16 @@ class FFmpegTaskCard(TaskCardBase):
         self.task_id = task.task_id
         self.status = TaskStatus.Waiting
         self.statusText = [
-            "等待中",
-            "初始化中",
-            "压制中",
-            "失败",
-            "成功",
-            "正在取消",
-            "已取消",
+            self.globalText.StatusWaiting,
+            self.globalText.StatusPending,
+            self.globalText.Pressing,
+            self.globalText.Failed,
+            self.globalText.Success,
+            self.globalText.StatusCancelling,
+            self.globalText.Cancelled,
         ]
+        # two-pass 阶段文案（如「第一遍分析」），仅 Processing 状态下拼接到状态文本
+        self.stageText = ""
         self.imageLabel = ImageLabel()
         self.fileNameLabel = BodyLabel(task.fileName)
         self.progressBar = ProgressBar()
@@ -157,23 +161,23 @@ class FFmpegTaskCard(TaskCardBase):
         self.speedIcon.setFixedSize(16, 16)
         self.finishTimeIcon.setFixedSize(16, 16)
 
-        self.openFolderButton.setToolTip("在文件夹中显示")
+        self.openFolderButton.setToolTip(self.globalText.ShowInFolder)
         self.openFolderButton.setToolTipDuration(3000)
         self.openFolderButton.installEventFilter(ToolTipFilter(self.openFolderButton))
         self.cancelButton = ToolButton(FluentIcon.CLOSE)
-        self.cancelButton.setToolTip("取消任务")
+        self.cancelButton.setToolTip(self.globalText.CancelTask)
         self.cancelButton.setToolTipDuration(3000)
         self.cancelButton.installEventFilter(ToolTipFilter(self.cancelButton))
         self.retryButton = ToolButton(FluentIcon.SYNC)
-        self.retryButton.setToolTip("重试任务")
+        self.retryButton.setToolTip(self.globalText.RetryTask)
         self.retryButton.setToolTipDuration(3000)
         self.retryButton.installEventFilter(ToolTipFilter(self.retryButton))
         self.logButton = ToolButton(FluentIcon.COMMAND_PROMPT)
-        self.logButton.setToolTip("查看日志")
+        self.logButton.setToolTip(self.globalText.ViewLog)
         self.logButton.setToolTipDuration(3000)
         self.logButton.installEventFilter(ToolTipFilter(self.logButton))
         self.deleteButton.setColorScheme("error")
-        self.deleteButton.setToolTip("移除任务")
+        self.deleteButton.setToolTip(self.globalText.RemoveTask)
         self.deleteButton.setToolTipDuration(3000)
         self.deleteButton.installEventFilter(ToolTipFilter(self.deleteButton))
 
@@ -234,7 +238,11 @@ class FFmpegTaskCard(TaskCardBase):
 
     def _updateStatus(self, status: TaskStatus = TaskStatus.Waiting):
         self.status = status
-        self.statusLabel.setText(self.statusText[self.status.value])
+        text = self.statusText[self.status.value]
+        # two-pass 阶段文案仅在压制中显示
+        if status == TaskStatus.Processing and self.stageText:
+            text = f"{text} · {self.stageText}"
+        self.statusLabel.setText(text)
         if status == TaskStatus.Waiting:
             self.openFolderButton.setVisible(False)
             self.cancelButton.setVisible(False)
@@ -315,6 +323,20 @@ class FFmpegTaskCard(TaskCardBase):
         self._updateStatus(status)
         self._updateInfo(size, time, bitrate, speed)
 
+    def updateStage(self, stage_text: str):
+        """更新 two-pass 阶段文案
+
+        传入空字符串清除阶段文案。仅 Processing 状态下拼接到状态文本显示，
+        其他状态忽略（阶段切换发生在压制过程中，状态不会先变）。
+        """
+        self.stageText = stage_text
+        if self.status == TaskStatus.Processing and stage_text:
+            self.statusLabel.setText(
+                f"{self.statusText[self.status.value]} · {stage_text}"
+            )
+        else:
+            self.statusLabel.setText(self.statusText[self.status.value])
+
     def removeTask(self, deleteFile=False):
         event_bus.deleteTaskSig.emit(self.task.task_id, deleteFile)
 
@@ -351,9 +373,10 @@ class FFmpegTaskCard(TaskCardBase):
 class DeleteTaskDialog(MessageBoxBase):
     def __init__(self, parent=None, showCheckBox=True, deleteOnClose=True):
         super().__init__(parent)
-        self.titleLabel = SubtitleLabel("删除任务", self)
-        self.contentLabel = BodyLabel("确认删除任务吗？", self)
-        self.deleteFileCheckBox = CheckBox("删除文件", self)
+        self.globalText = Text()
+        self.titleLabel = SubtitleLabel(self.globalText.DeleteTask, self)
+        self.contentLabel = BodyLabel(self.globalText.ConfirmDeleteTask, self)
+        self.deleteFileCheckBox = CheckBox(self.globalText.DeleteFile, self)
 
         self.deleteFileCheckBox.setVisible(showCheckBox)
 

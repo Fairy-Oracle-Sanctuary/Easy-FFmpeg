@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档 | Easy FFmpeg</title>
+  <meta name="description" content="Easy FFmpeg 文档：12 种工具说明、系统要求与源码运行方式。">
+  <link rel="icon" type="image/png" sizes="128x128" href="images/logo.png">
+  <link rel="shortcut icon" type="image/png" href="images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main>
+    <nav class="navbar">
+      <div class="nav-container">
+        <a class="nav-brand" href="index.html">
+          <div class="nav-logo">
+            <img src="images/logo.png" alt="Easy FFmpeg Logo">
+          </div>
+          <span class="nav-title"></span>
+        </a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navMenu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="nav-menu" id="navMenu">
+          <div class="nav-links">
+            <a href="index.html#features" class="nav-link" data-i18n="nav.features">功能特性</a>
+            <a href="docs.html" class="nav-link" data-i18n="nav.docs">文档</a>
+            <a href="download.html" class="nav-link" data-i18n="nav.download">下载</a>
+          </div>
+          <div class="nav-actions">
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+              <svg class="icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+              <svg class="icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </button>
+            <div class="language-switcher">
+              <button class="lang-btn" id="langBtn">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <span id="currentLang">简体中文</span>
+              </button>
+              <div class="lang-dropdown" id="langDropdown">
+                <button class="lang-option active" data-lang="zh">简体中文</button>
+                <button class="lang-option" data-lang="en">English</button>
+              </div>
+            </div>
+            <div class="nav-social">
+              <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" target="_blank" class="nav-link" aria-label="GitHub">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="docs-shell">
+      <aside class="docs-sidebar">
+        <nav class="docs-sidebar-nav" aria-label="Docs navigation">
+          <a href="#tools" data-i18n="docs.nav.tools">工具一览</a>
+          <a href="#requirements" data-i18n="docs.nav.requirements">系统要求</a>
+          <a href="#source" data-i18n="docs.nav.source">源码运行</a>
+        </nav>
+      </aside>
+
+      <article class="docs-content">
+        <header class="docs-header">
+          <p class="docs-kicker" data-i18n="docs.kicker">Documentation</p>
+          <h1 data-i18n="docs.title">使用文档</h1>
+          <p data-i18n="docs.description">这里整理了 12 种工具说明、系统要求与源码运行方式。</p>
+        </header>
+
+        <section class="docs-section" id="tools">
+          <h2 data-i18n="docs.tools.title">12 种常用工具</h2>
+          <p data-i18n="docs.tools.intro">从「更多」页面入口网格选择所需工具，进入功能页填写参数后执行。工具任务复用主任务队列，统一显示进度与状态。</p>
+          <div class="docs-tools-grid">
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.audio_extract.name">音频提取</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.audio_extract.desc">从视频提取音轨，转为 MP3 / AAC / WAV / Opus / Vorbis / FLAC</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.snapshot.name">视频截图</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.snapshot.desc">按时间点截取单帧画面，支持 PNG / JPG / WEBP</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.gif.name">GIF 制作</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.gif.desc">视频片段转 GIF 动图</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.cut.name">视频剪切</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.cut.desc">按时间段裁剪视频</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.convert.name">音视频格式转换</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.convert.desc">容器与编码互转</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.image_convert.name">图片格式转换</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.image_convert.desc">图片格式互转与质量压缩</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.concat.name">视频拼接</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.concat.desc">合并多个视频，自动用 scale2ref + setsar 统一分辨率与 SAR</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.media_info.name">媒体信息</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.media_info.desc">异步探测编码 / 码率 / 时长等详情，结构化中文展示</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M9 9h6v6H9z"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.ms_logo.name">MS Store 徽标</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.ms_logo.desc">一键生成 5 个微软商店徽标（720×1080、1080×1080、300×300、150×150、71×71）</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.subtitle.name">字幕处理</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.subtitle.desc">提取 / 嵌入硬字幕 / 嵌入软字幕 / 格式转换（SRT / ASS / VTT）</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.loudnorm.name">音量归一化</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.loudnorm.desc">基于 EBU R128 标准的响度与动态范围归一化</div>
+              </div>
+            </div>
+            <div class="tool-item">
+              <svg class="tool-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <div>
+                <div class="tool-item-name" data-i18n="docs.tools.speed.name">速度调整</div>
+                <div class="tool-item-desc" data-i18n="docs.tools.speed.desc">音视频同步变速 / 仅视频 / 仅音频，支持 0.25×–8×+</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="docs-section" id="requirements">
+          <h2 data-i18n="docs.requirements.title">系统要求</h2>
+          <ul class="guide-list">
+            <li data-i18n="guide.sys.os"><strong>操作系统：</strong>支持 Windows 10/11（推荐）、macOS 10.15+ 与 Linux，三大平台原生运行。</li>
+            <li data-i18n="guide.sys.python"><strong>运行环境：</strong>Python 3.9 及以上版本，推荐使用 uv 进行极速依赖管理。</li>
+            <li data-i18n="guide.sys.ffmpeg"><strong>FFmpeg：</strong>需单独安装并加入系统 PATH，应用启动时自动检测路径，也可在「设置」页面手动指定。</li>
+            <li data-i18n="guide.sys.gpu"><strong>硬件加速：</strong>可选配备 GPU（NVIDIA / Intel / AMD / Apple），用于编码加速；建议内存 4GB 以上。</li>
+          </ul>
+        </section>
+
+        <section class="docs-section" id="source">
+          <h2 data-i18n="docs.source.title">源码运行</h2>
+          <p class="guide-intro" data-i18n="guide.run.intro">源码运行与部署流程（开发者 / 高级用户）：</p>
+          <pre class="code-block"><code data-i18n="guide.run.code"># 1. 克隆仓库
+git clone --recursive https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg.git
+cd Easy-FFmpeg
+
+# 2. 创建并激活虚拟环境
+uv venv
+.venv\Scripts\activate        # Windows
+source .venv/bin/activate     # Unix/macOS
+
+# 3. 安装依赖
+uv pip install -r requirements.txt
+uv pip install -r requirements-win.txt   # Windows 额外依赖
+uv pip install -r requirements-mac.txt   # macOS 额外依赖
+
+# 4. 确保 ffmpeg 已安装并加入 PATH
+#    或在应用「设置」页面手动指定路径
+
+# 5. 运行应用
+python Easy-FFmpeg.py</code></pre>
+        </section>
+      </article>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <img src="images/logo.png" alt="Easy FFmpeg Logo">
+        </div>
+        <p class="footer-quote" data-i18n="footer.quote">“让视频处理变得简单，让创意自由流动。”</p>
+        <div class="footer-links">
+          <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg" target="_blank" data-i18n="footer.github">GitHub</a>
+        </div>
+        <p class="footer-copyright" id="copyright">🄯 2026 天机阁 Fairy Oracle Sanctuary</p>
+      </div>
+    </footer>
+
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+    </button>
+  </main>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

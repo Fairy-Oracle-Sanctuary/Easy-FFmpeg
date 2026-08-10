@@ -1,5 +1,3 @@
-# from ..common.signal_bus import signalBus
-# from ..common.icon import Logo
 import shutil
 import subprocess
 
@@ -11,6 +9,8 @@ from libs.qfluentwidgets_pro import (
     ComboBoxSettingCard,
     Dialog,
     ExpandLayout,
+    InfoBadge,
+    InfoBadgePosition,
     PrimaryPushSettingCard,
     PushSettingCard,
     ScrollArea,
@@ -77,27 +77,41 @@ class SettingInterface(ScrollArea):
         self.settingLabel = TitleLabel(self.globalText.Settings, self)
 
         # 软件
-        self.softwareGroup = SettingCardGroup("软件", self.scrollWidget)
+        self.softwareGroup = SettingCardGroup(
+            self.globalText.Software, self.scrollWidget
+        )
         self.homeRecursiveCard = SwitchSettingCard(
             FIF.FOLDER,
-            "递归遍历文件夹",
-            "添加文件夹时是否递归遍历子文件夹中的媒体文件",
+            self.globalText.HomeRecursive,
+            self.globalText.HomeRecursiveDesc,
             cfg.homeRecursive,
+            self.softwareGroup,
+        )
+        self.retryUseCurrentSettingsCard = SwitchSettingCard(
+            FIF.SYNC,
+            self.globalText.RetryUseCurrentSettings,
+            self.globalText.RetryUseCurrentSettingsDesc,
+            cfg.retryUseCurrentSettings,
             self.softwareGroup,
         )
         self.autoCleanLogsCard = SwitchSettingCard(
             FIF.BROOM,
-            "自动清理过期日志",
-            "启动时自动删除超过保留期限的日志文件",
+            self.globalText.AutoCleanLogs,
+            self.globalText.AutoCleanLogsDesc,
             cfg.autoCleanLogs,
             self.softwareGroup,
         )
         self.logRetentionCard = ComboBoxSettingCard(
             cfg.logRetentionDays,
             FIF.HISTORY,
-            "日志保留天数",
-            "超过该天数的日志文件将在启动时自动清理",
-            ["7 天", "14 天", "30 天", "90 天"],
+            self.globalText.LogRetentionDays,
+            self.globalText.LogRetentionDaysDesc,
+            [
+                self.globalText.NDays.format(7),
+                self.globalText.NDays.format(14),
+                self.globalText.NDays.format(30),
+                self.globalText.NDays.format(90),
+            ],
             self.softwareGroup,
         )
 
@@ -107,8 +121,8 @@ class SettingInterface(ScrollArea):
         )
         self.micaCard = SwitchSettingCard(
             FIF.TRANSPARENT,
-            "云母效果",
-            "窗口和表面显示半透明",
+            self.globalText.MicaEffect,
+            self.globalText.MicaEffectDesc,
             cfg.micaEnabled,
             self.personalGroup,
         )
@@ -152,7 +166,85 @@ class SettingInterface(ScrollArea):
             FIF.LANGUAGE,
             self.globalText.Language,
             self.globalText.SetInterfaceLanguage,
-            texts=["简体中文", "English", self.globalText.FollowSystem],
+            texts=[
+                "简体中文",
+                "繁體中文",
+                "English",
+                "日本語",
+                "한국어",
+                "Français",
+                "Deutsch",
+                "Español",
+                "Português",
+                "Русский",
+                "Italiano",
+                "Nederlands",
+                "Polski",
+                "Türkçe",
+                "Tiếng Việt",
+                "ไทย",
+                "Bahasa Indonesia",
+                "हिन्दी",
+                "العربية",
+                "Afrikaans",
+                "አማርኛ",
+                "Azərbaycanca",
+                "Беларуская",
+                "Български",
+                "বাংলা",
+                "Bosanski",
+                "Català",
+                "Čeština",
+                "Cymraeg",
+                "Dansk",
+                "Ελληνικά",
+                "Eesti",
+                "Euskara",
+                "فارسی",
+                "Suomi",
+                "Gaeilge",
+                "Galego",
+                "ગુજરાતી",
+                "עברית",
+                "Hrvatski",
+                "Magyar",
+                "Հայերեն",
+                "Íslenska",
+                "ქართული",
+                "Қазақша",
+                "ខ្មែរ",
+                "ಕನ್ನಡ",
+                "Lietuvių",
+                "Latviešu",
+                "Македонски",
+                "മലയാളം",
+                "Монгол",
+                "मराठी",
+                "Bahasa Melayu",
+                "မြန်မာ",
+                "Norsk bokmål",
+                "नेपाली",
+                "Norsk nynorsk",
+                "ਪੰਜਾਬੀ",
+                "Português (Portugal)",
+                "Română",
+                "සිංහල",
+                "Slovenčina",
+                "Slovenščina",
+                "Shqip",
+                "Српски",
+                "Svenska",
+                "Kiswahili",
+                "தமிழ்",
+                "తెలుగు",
+                "Тоҷикӣ",
+                "Tagalog",
+                "Українська",
+                "اردو",
+                "Oʻzbekcha",
+                "繁體中文（香港）",
+                self.globalText.FollowSystem,
+            ],
             parent=self.personalGroup,
         )
         self.closeDirectlyCard = SwitchSettingCard(
@@ -192,8 +284,8 @@ class SettingInterface(ScrollArea):
         )
         self.updateOnStartUpCard = SwitchSettingCard(
             FIF.UPDATE,
-            "在软件启动时检查更新",
-            "新版本更稳定且具有更多功能(推荐开启)",
+            self.globalText.CheckUpdateAtStartUp,
+            self.globalText.CheckUpdateAtStartUpDesc,
             configItem=cfg.checkUpdateAtStartUp,
             parent=self.aboutGroup,
         )
@@ -221,6 +313,7 @@ class SettingInterface(ScrollArea):
         self.settingLabel.move(36, 40)
 
         self.softwareGroup.addSettingCard(self.homeRecursiveCard)
+        self.softwareGroup.addSettingCard(self.retryUseCurrentSettingsCard)
         self.softwareGroup.addSettingCard(self.autoCleanLogsCard)
         self.softwareGroup.addSettingCard(self.logRetentionCard)
 
@@ -375,9 +468,29 @@ class SettingInterface(ScrollArea):
                 ),
             )
         )
+        # 新版本检测到时在检查更新按钮上显示版本号徽标
+        self.aboutBadge = InfoBadge.error(
+            "",
+            parent=self.aboutCard,
+            target=self.aboutCard.button,
+            position=InfoBadgePosition.TOP_LEFT,
+        )
+        self.aboutBadge.hide()
+        event_bus.newVersionDetected.connect(self._onNewVersionDetected)
 
         # 日志自动清理：关闭时禁用保留天数选项
         self.autoCleanLogsCard.checkedChanged.connect(
             lambda checked: self.logRetentionCard.setEnabled(checked)
         )
         self.logRetentionCard.setEnabled(cfg.get(cfg.autoCleanLogs))
+
+    def _onNewVersionDetected(self, version: str):
+        """新版本检测到时在检查更新按钮上显示版本号徽标"""
+        if version:
+            self.aboutBadge.setText(version)
+            self.aboutBadge.setFixedSize(self.aboutBadge.sizeHint())
+            if self.aboutBadge.manager:
+                self.aboutBadge.move(self.aboutBadge.manager.position())
+            self.aboutBadge.show()
+        else:
+            self.aboutBadge.hide()
