@@ -40,7 +40,6 @@
 | 平台 / Platform | 架构 / Arch | 安装包 / Installer |
 | --- | --- | --- |
 | Windows | x86_64 | [Easy-FFmpeg-v1.0.0-Windows-x86_64-Setup.exe](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v1.0.0/Easy-FFmpeg-v1.0.0-Windows-x86_64-Setup.exe) |
-| Windows | MS Store | [Microsoft Store](https://apps.microsoft.com/detail/9MWJTGD5K71V) |
 | macOS | x86_64 (Intel / Rosetta 2) | [Easy-FFmpeg-v1.0.0-macOS-x86_64.dmg](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v1.0.0/Easy-FFmpeg-v1.0.0-macOS-x86_64.dmg) |
 | Linux | x86_64 | [Easy-FFmpeg-v1.0.0-Linux-x86_64.deb](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v1.0.0/Easy-FFmpeg-v1.0.0-Linux-x86_64.deb) · [Easy-FFmpeg-v1.0.0-Linux-x86_64.rpm](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v1.0.0/Easy-FFmpeg-v1.0.0-Linux-x86_64.rpm) |
 | Linux | aarch64 | [Easy-FFmpeg-v1.0.0-Linux-aarch64.deb](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v1.0.0/Easy-FFmpeg-v1.0.0-Linux-aarch64.deb) · [Easy-FFmpeg-v1.0.0-Linux-aarch64.rpm](https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases/download/v1.0.0/Easy-FFmpeg-v1.0.0-Linux-aarch64.rpm) |
