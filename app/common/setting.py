@@ -20,7 +20,7 @@ FFMPEG_WEBSITE = "https://ffmpeg.org/"
 
 # 是否为微软商店版本（商店版不允许内置下载安装包功能，只能跳转浏览器）
 IS_MS_STORE_VERSION = False
-MS_STORE_URL = ""
+MS_STORE_URL = "https://apps.microsoft.com/detail/9MWJTGD5K71V"
 
 # 统一放用户目录，避免权限问题和路径漂移
 if sys.platform == "win32":

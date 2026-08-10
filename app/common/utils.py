@@ -4,8 +4,10 @@ import sys
 from json import loads
 from pathlib import Path
 
-from PySide6.QtCore import QDir, QFile, QFileInfo, QProcess, QRunnable, QUrl
+from PySide6.QtCore import QDir, QFile, QFileInfo, QProcess, QUrl, QRunnable
 from PySide6.QtGui import QDesktopServices
+
+from .setting import IS_MS_STORE_VERSION
 
 
 def adjustFileName(name: str):
@@ -107,10 +109,12 @@ class DeleteFileWorker(QRunnable):
 
 
 def openUrl(url):
+    if not url:
+        return False
     if not url.startswith("http"):
-        if not os.path.exists(url):
+        # MSIX 沙箱下 os.path.exists() 可能对虚拟化路径返回 False，跳过检查
+        if not IS_MS_STORE_VERSION and not os.path.exists(url):
             return False
-
         QDesktopServices.openUrl(QUrl.fromLocalFile(url))
     else:
         QDesktopServices.openUrl(QUrl(url))
@@ -120,13 +124,17 @@ def openUrl(url):
 
 def showInFolder(path):
     """show file in file explorer"""
-    if not os.path.exists(path):
+    if not path:
         return False
 
     if isinstance(path, Path):
         path = str(path.absolute())
 
     if not path or path.lower().startswith("http"):
+        return False
+
+    # MSIX 沙箱下 os.path.exists() 可能对虚拟化路径返回 False，跳过检查
+    if not IS_MS_STORE_VERSION and not os.path.exists(path):
         return False
 
     info = QFileInfo(path)  # type:QFileInfo

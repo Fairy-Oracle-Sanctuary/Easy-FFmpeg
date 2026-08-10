@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2" xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap uap2 uap3 uap10 rescap">
+  <Identity Name="baby2016.EasyFFmpeg" Publisher="CN=F1DF7AC3-43D8-4EF8-86BD-F4EBD50D8EAB" Version="1.0.0.0" ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>Easy FFmpeg</DisplayName>
+    <PublisherDisplayName>baby2016</PublisherDisplayName>
+    <Description>FFmpeg-Powered Batch Video Processing</Description>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <uap10:PackageIntegrity>
+      <uap10:Content Enforcement="on" />
+    </uap10:PackageIntegrity>
+  </Properties>
+  <Resources>
+    <Resource Language="zh-cn" />
+    <Resource Language="en-us" />
+  </Resources>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22000.1" />
+  </Dependencies>
+  <Applications>
+    <Application Id="EASYFFMPEG" Executable="VFS\Easy-FFmpeg.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements BackgroundColor="transparent" DisplayName="Easy FFmpeg" Square150x150Logo="Assets\EASYFFMPEG-Square150x150Logo.png" Square44x44Logo="Assets\EASYFFMPEG-Square44x44Logo.png" Description="FFmpeg-Powered Batch Video Processing">
+        <uap:DefaultTile Wide310x150Logo="Assets\EASYFFMPEG-Wide310x150Logo.png" Square310x310Logo="Assets\EASYFFMPEG-Square310x310Logo.png" Square71x71Logo="Assets\EASYFFMPEG-Square71x71Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation Name="easyffmpeg.media" Parameters="&quot;%1&quot;">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.mp4</uap:FileType>
+              <uap:FileType>.mkv</uap:FileType>
+              <uap:FileType>.avi</uap:FileType>
+              <uap:FileType>.mov</uap:FileType>
+              <uap:FileType>.wmv</uap:FileType>
+              <uap:FileType>.flv</uap:FileType>
+              <uap:FileType>.webm</uap:FileType>
+              <uap:FileType>.m4v</uap:FileType>
+              <uap:FileType>.mpg</uap:FileType>
+              <uap:FileType>.mpeg</uap:FileType>
+              <uap:FileType>.m2ts</uap:FileType>
+              <uap:FileType>.mts</uap:FileType>
+              <uap:FileType>.ts</uap:FileType>
+              <uap:FileType>.vob</uap:FileType>
+              <uap:FileType>.3gp</uap:FileType>
+              <uap:FileType>.3g2</uap:FileType>
+              <uap:FileType>.ogv</uap:FileType>
+              <uap:FileType>.rm</uap:FileType>
+              <uap:FileType>.rmvb</uap:FileType>
+              <uap:FileType>.asf</uap:FileType>
+              <uap:FileType>.f4v</uap:FileType>
+              <uap:FileType>.m2v</uap:FileType>
+              <uap:FileType>.divx</uap:FileType>
+              <uap:FileType>.xvid</uap:FileType>
+              <uap:FileType>.mxf</uap:FileType>
+              <uap:FileType>.mp3</uap:FileType>
+              <uap:FileType>.flac</uap:FileType>
+              <uap:FileType>.wav</uap:FileType>
+              <uap:FileType>.aac</uap:FileType>
+              <uap:FileType>.m4a</uap:FileType>
+              <uap:FileType>.ogg</uap:FileType>
+              <uap:FileType>.wma</uap:FileType>
+              <uap:FileType>.opus</uap:FileType>
+              <uap:FileType>.ac3</uap:FileType>
+              <uap:FileType>.eac3</uap:FileType>
+              <uap:FileType>.dts</uap:FileType>
+              <uap:FileType>.aiff</uap:FileType>
+              <uap:FileType>.alac</uap:FileType>
+              <uap:FileType>.ape</uap:FileType>
+              <uap:FileType>.wv</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap2:SupportedVerbs>
+              <uap3:Verb Id="Process" Parameters="&quot;%1&quot;">Easy FFmpeg</uap3:Verb>
+            </uap2:SupportedVerbs>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
