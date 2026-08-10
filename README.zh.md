@@ -7,7 +7,7 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg">GitHub 仓库</a> · <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases">下载发布版</a>
+  <a href="https://easypeg.ora-san.org/">软件官网</a> · <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg">GitHub 仓库</a> · <a href="https://github.com/Fairy-Oracle-Sanctuary/Easy-FFmpeg/releases">下载发布版</a>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
   </a>
 
   <a style="text-decoration:none">
-    <img src="https://img.shields.io/badge/Version-0.5.0-purple" alt="Version 0.5.0"/>
+    <img src="https://img.shields.io/badge/Version-1.0.0-purple" alt="Version 1.0.0"/>
   </a>
 
   <a style="text-decoration:none">

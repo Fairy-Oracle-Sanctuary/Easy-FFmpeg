@@ -74,6 +74,11 @@
         </uap3:Extension>
       </Extensions>
     </Application>
+    <Application Id="FFMPEG" Executable="VFS\tools\ffmpeg.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements BackgroundColor="transparent" DisplayName="ffmpeg" Square150x150Logo="Assets\EASYFFMPEG-Square150x150Logo.png" Square44x44Logo="Assets\EASYFFMPEG-Square44x44Logo.png" Description="ffmpeg">
+        <uap:DefaultTile Wide310x150Logo="Assets\EASYFFMPEG-Wide310x150Logo.png" Square310x310Logo="Assets\EASYFFMPEG-Square310x310Logo.png" Square71x71Logo="Assets\EASYFFMPEG-Square71x71Logo.png" />
+      </uap:VisualElements>
+    </Application>
   </Applications>
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
