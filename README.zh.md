@@ -273,7 +273,7 @@ A: 应用未签名，首次打开请右键 → 打开，或在终端执行 `xatt
 
 ## 致谢
 
-- UI 组件基于 [PyQt-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets)
+- UI 组件基于 [PySide6-Fluent-Widgets-Pro](https://github.com/Fairy-Oracle-Sanctuary/PySide6-Fluent-Widgets-Pro)（Fork 自 [PyQt-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets) 并在此基础上修改）
 - 视频处理基于 [FFmpeg](https://ffmpeg.org/)
 
 ---

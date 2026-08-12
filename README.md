@@ -273,7 +273,7 @@ This project is licensed under [GPL v3](LICENSE).
 
 ## Acknowledgments
 
-- UI components based on [PyQt-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets)
+- UI components based on [PySide6-Fluent-Widgets-Pro](https://github.com/Fairy-Oracle-Sanctuary/PySide6-Fluent-Widgets-Pro) (forked from [PyQt-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets))
 - Video processing based on [FFmpeg](https://ffmpeg.org/)
 
 ---
